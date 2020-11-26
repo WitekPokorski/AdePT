@@ -30,6 +30,7 @@ __device__ void pair_production::GenerateInteraction(int particle_index, adept::
         auto secondary_track = block->NextElement();
         assert(secondary_track != nullptr && "No slot available for secondary track");
         secondary_track->energy = eloss;
+        secondary_track->status = alive;
     }
     else
     {
