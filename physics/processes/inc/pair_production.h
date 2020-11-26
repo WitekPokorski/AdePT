@@ -12,7 +12,7 @@ class pair_production: public process  {
 
 __device__ float pair_production::GetPhysicsInteractionLength(int particle_index, adept::BlockData<track> *block, curandState_t *states) const {
     
-    float current_length = curand_uniform(states) * 100.0f; // here I need to calculate the IL based on the particle energy, material, etc
+    float current_length = curand_uniform(states) * 110.0f; // here I need to calculate the IL based on the particle energy, material, etc
     return current_length;
 }
 
@@ -20,26 +20,15 @@ __device__ void pair_production::GenerateInteraction(int particle_index, adept::
 {
     track* mytrack = &((*block)[particle_index]);
 
-    if (mytrack->energy > 0.001f)
-    {
-        // pair production
-        float eloss = 0.5f * mytrack->energy;
+    // pair production
+    float eloss = 0.5f * mytrack->energy;
 
-        mytrack->energy -= eloss;
+    mytrack->energy -= eloss;
 
-        auto secondary_track = block->NextElement();
-        assert(secondary_track != nullptr && "No slot available for secondary track");
-        secondary_track->energy = eloss;
-        secondary_track->status = alive;
-    }
-    else
-    {
-        mytrack->status = dead;
-    }
-    
-
+    auto secondary_track = block->NextElement();
+    assert(secondary_track != nullptr && "No slot available for secondary track");
+    secondary_track->energy = eloss;
+    secondary_track->status = alive;
 }
-
-
 
 #endif

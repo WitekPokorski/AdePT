@@ -15,40 +15,40 @@
 
 #include "track.h"
 
-using Queue_t = adept::mpmc_bounded_queue<int>;
+#include <AdePT/MParray.h>
 
-
-
-__global__ void DefinePhysicalStepLength(int n, adept::BlockData<track> *block, process_list** proclist, Queue_t *queues[], curandState_t *states)
+__global__ void DefinePhysicalStepLength(adept::BlockData<track> *block, process_list** proclist, adept::MParray **queues, curandState_t *states)
 {
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
-    // check if you are not outside the used block
-    if (i > block->GetNused() + block->GetNholes()) return;
+  int n = block->GetNused() + block->GetNholes();
 
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
+    
     if ((*block)[i].status == dead) continue;
 
     (*proclist)->GetPhysicsInteractionLength(i, block, states);
-
     // now, I know which process wins, so I add the particle to the appropriate queue
-    queues[(*block)[i].current_process]->enqueue(i);
+    queues[(*block)[i].current_process]->push_back(i);
   }
 }
 
 
-__global__ void CallAlongStepProcesses(int n, adept::BlockData<track> *block, process_list** proclist, Queue_t *queues[], curandState_t *states)
+__global__ void CallAlongStepProcesses(adept::BlockData<track> *block, process_list** proclist, adept::MParray **queues, curandState_t *states)
 {
   int particle_index;
 
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
-    for (int process_id=0; process_id < (*proclist)->list_size; process_id++)
+  for (int process_id=0 ; process_id < (*proclist)->list_size; process_id++) 
     {
-      if (!queues[process_id]->dequeue(particle_index)) continue;
+      int queue_size = queues[process_id]->size();
 
-      ((*proclist)->list)[process_id]->GenerateInteraction(particle_index, block, states);
+      for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < queue_size; i += blockDim.x * gridDim.x) 
+        {
+          particle_index = (*(queues[process_id]))[i];
 
-      if ((*block)[particle_index].status == dead) block->ReleaseElement(particle_index);
+          ((*proclist)->list)[process_id]->GenerateInteraction(particle_index, block, states);
+
+          if ((*block)[particle_index].status == dead) block->ReleaseElement(particle_index);
+        }
     }
-  }
 }
 
 /* this GPU kernel function is used to initialize the random states */
@@ -59,7 +59,6 @@ __global__ void init(curandState_t *states)
 }
 
 // kernel to create the processes and process list
-
 __global__ void create_processes(process_list **proclist, process **processes)
 {
   *(processes) = new energy_loss();
@@ -67,6 +66,7 @@ __global__ void create_processes(process_list **proclist, process **processes)
 
   *proclist = new process_list(processes, 2);
 }
+
 //
 
 int main()
@@ -90,33 +90,27 @@ int main()
   // Capacity of the different containers
   constexpr int capacity = 1 << 20;
 
-  using Queue_t = adept::mpmc_bounded_queue<int>;
-
   constexpr int numberOfProcesses = 3;
   char *buffer[numberOfProcesses];
 
-  Queue_t **queues = nullptr;
-  cudaMallocManaged(&queues, numberOfProcesses * sizeof(Queue_t *));
+  adept::MParray **queues = nullptr;
+  cudaMallocManaged(&queues, numberOfProcesses * sizeof(adept::MParray *));
 
-  size_t buffersize = Queue_t::SizeOfInstance(capacity);
+  size_t buffersize = adept::MParray::SizeOfInstance(capacity);
 
   for (int i = 0; i < numberOfProcesses; i++) {
     buffer[i] = nullptr;
     cudaMallocManaged(&buffer[i], buffersize);
 
-    queues[i] = Queue_t::MakeInstanceAt(capacity, buffer[i]);
+    queues[i] = adept::MParray::MakeInstanceAt(capacity, buffer[i]);
   }
 
   
   // Allocate a block of tracks with capacity larger than the total number of spawned threads
-  // Note that if we want to allocate several consecutive block in a buffer, we have to use
-  // Block_t::SizeOfAlignAware rather than SizeOfInstance to get the space needed per block
-
-  using Block_t    = adept::BlockData<track>;
-  size_t blocksize = Block_t::SizeOfInstance(capacity);
+  size_t blocksize = adept::BlockData<track>::SizeOfInstance(capacity);
   char *buffer2    = nullptr;
   cudaMallocManaged(&buffer2, blocksize);
-  auto block = Block_t::MakeInstanceAt(capacity, buffer2);
+  auto block = adept::BlockData<track>::MakeInstanceAt(capacity, buffer2);
 
   // initializing one track in the block
   auto track    = block->NextElement();
@@ -124,9 +118,10 @@ int main()
   track->index = 1;
 
   // initializing second track in the block
-//   auto track2    = block->NextElement();
-//  track2->energy = 30.0f;
-//  track2->index = 2;
+  //  auto track2    = block->NextElement();
+  //  track2->energy = 30.0f;
+  //  track2->index = 2;
+
   //
   constexpr dim3 nthreads(32);
   constexpr dim3 maxBlocks(10);
@@ -134,18 +129,19 @@ int main()
 
   while (block->GetNused()>0) 
   {
-
-    int n = block->GetNused() + block->GetNholes();
-
     numBlocks.x = (block->GetNused() + block->GetNholes() + nthreads.x - 1) / nthreads.x;
     numBlocks.x = std::min(numBlocks.x, maxBlocks.x);
 
     // call the kernel to do check the step lenght and select process
-    DefinePhysicalStepLength<<<numBlocks, nthreads>>>(n, block, proclist, queues, state);
+    DefinePhysicalStepLength<<<numBlocks, nthreads>>>(block, proclist, queues, state);
     
     // call the kernel for Along Step Processes
-    CallAlongStepProcesses<<<numBlocks, nthreads>>>(n, block, proclist, queues, state);
+    CallAlongStepProcesses<<<numBlocks, nthreads>>>(block, proclist, queues, state);
 
+    cudaDeviceSynchronize();
+
+    for (int i = 0; i < numberOfProcesses; i++) queues[i]->clear();
+  
     cudaDeviceSynchronize();
 
     std::cout << "Nused: " << block->GetNused() << std::endl;
