@@ -13,6 +13,8 @@ struct track {
     TrackStatus status{alive}; 
     int current_process{0};
     float interaction_length{FLT_MAX};
+    float energy_loss{0}; // primitive version of scoring 
+    int number_of_secondaries{0}; // primitive version of scoring
   };
 
 #endif

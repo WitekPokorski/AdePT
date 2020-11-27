@@ -26,7 +26,7 @@ __device__ bool process_list::GetPhysicsInteractionLength(int particle_index, ad
                 current_length = temp;
             }
     }
-  return physics_wins;
+  return physics_wins; 
 }
 
 #endif
