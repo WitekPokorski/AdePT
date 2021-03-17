@@ -23,17 +23,14 @@
 inline namespace COPCORE_IMPL {
 
 // kernel to create the processes and process list
-__device__ void create_processes(int, process_list **proclist, process **processes)
+__device__ void create_processes(int, /*process_list **proclist, **/ process **processes)
 {
   // instantiate the existing processes
   *(processes) = new energy_loss();
   *(processes+1) = new pair_production();
 
   // add them to process_list (process manager)
-  *proclist = new process_list(processes, 2);
-
-printf("proclist %p \n", (*proclist));
-printf("processes: %d \n", (*proclist)->list_size);
+//  *proclist = new process_list(processes, 2);
 
 }
 

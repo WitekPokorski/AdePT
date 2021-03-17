@@ -37,8 +37,12 @@ int runSimulation()
   copcore::Allocator<process_list*, backend> proclistAlloc;  
   process_list **proclist = proclistAlloc.allocate(1); 
 
+  *proclist = new process_list(processes, 2);
+
+ cudaDeviceSynchronize();
+ 
   Launcher_t create_processes_launch(stream);
-  create_processes_launch.Run(processesFunc, 1, {0,0}, proclist, processes);
+  create_processes_launch.Run(processesFunc, 1, {0,0}/*, proclist*/, processes);
   create_processes_launch.WaitStream();
 
   std::cout << "proclist " << (*proclist) << std::endl;
