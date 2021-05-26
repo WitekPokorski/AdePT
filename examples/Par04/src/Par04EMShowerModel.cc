@@ -80,6 +80,7 @@ G4bool Par04EMShowerModel::IsApplicable(
 
 G4bool Par04EMShowerModel::ModelTrigger(const G4FastTrack& aFastTrack)
 {
+  /*
   // Check energy
   if(aFastTrack.GetPrimaryTrack()->GetKineticEnergy() < 1 * GeV)
   {
@@ -95,7 +96,7 @@ G4bool Par04EMShowerModel::ModelTrigger(const G4FastTrack& aFastTrack)
   G4double detectorDepthInMM = aFastTrack.GetEnvelopeSolid()->DistanceToOut(
     particlePosition, particleDirection);
   G4double detectorDepthInX0 = detectorDepthInMM / X0;
- 
+ */
   return true;
 }
 
@@ -131,10 +132,11 @@ int particles = 1;
 energy *= copcore::units::GeV;
 int batch = -1;
 
+// I need to pass the particle from Geant4 to AdePT and simulate the shower
 Shower(world, particles, energy, batch, startX, MCIndex, &scoringPerVolume, NumVolumes, &globalScoring);
 
-      // Create energy deposit in the detector
-      // This will call appropriate sensitive detector class
+// Create energy deposit in the detector
+// This will call appropriate sensitive detector class
 //      fHitMaker->make(G4FastHit(position, energy / fNbOfHits), aFastTrack);
 //      generatedHits++;
     

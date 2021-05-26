@@ -57,13 +57,9 @@ class Par04EMShowerModel : public G4VFastSimulationModel
   virtual G4bool ModelTrigger(const G4FastTrack&) final;
   /// Model is applicable to electrons, positrons, and photons.
   virtual G4bool IsApplicable(const G4ParticleDefinition&) final;
+
   /// Take particle out of the full simulation (kill it at the entrance
-  /// depositing all the energy). Calculate energy deposited in the detector
-  /// according to Gamma distribution (along the particle direction) and
-  /// Gaussian distribution in the transverse direction. Mean of the Gaussian is
-  /// centred on the shower axis. Create energy deposits on a cylindrical mesh.
-  /// Parameters of the mesh (size, number of cells) and of the distributions
-  /// (alpha, beta for Gamma, sigma for Gaussian) can be set with UI commands.
+  /// depositing all the energy). Simulate the full shower using AdePT library.
   virtual void DoIt(const G4FastTrack&, G4FastStep&) final;
 
   /// Print current settings.
