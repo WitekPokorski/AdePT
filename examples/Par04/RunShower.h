@@ -27,7 +27,7 @@ struct ScoringPerVolume {
   double *chargedTrackLength;
 };
 
-const void CreateVecGeomWorld();
+void CreateVecGeomWorld();
 
 // Interface between C++ and CUDA.
 void Shower(const vecgeom::cxx::VPlacedVolume *world, int numParticles, double energy, int batch, double startX,

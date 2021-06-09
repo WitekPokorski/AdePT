@@ -110,7 +110,7 @@ static void InitGeant4()
 */
 
 //static 
-const void CreateVecGeomWorld()
+void CreateVecGeomWorld()
 {
   auto worldSolid = new vecgeom::UnplacedBox(0.5 * WorldSizeX, 0.5 * WorldSizeYZ, 0.5 * WorldSizeYZ);
   auto worldLogic = new vecgeom::LogicalVolume("World", worldSolid);

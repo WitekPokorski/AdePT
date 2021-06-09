@@ -35,6 +35,8 @@ __constant__ __device__ struct G4HepEmData g4HepEmData;
 
 __constant__ __device__ int *MCIndex = nullptr;
 
+__constant__ __device__ int Zero = 0;
+
 struct G4HepEmState {
   G4HepEmData data;
   G4HepEmParameters parameters;
@@ -336,7 +338,7 @@ void Shower(const vecgeom::cxx::VPlacedVolume *world, int numParticles, double e
 
         relocateBlocks = std::min(numElectrons, MaxBlocks);
 
-        TransportElectrons</*IsElectron*/ true><<<transportBlocks, TransportThreads, 0, electrons.stream>>>(
+        TransportElectrons<<<transportBlocks, TransportThreads, 0, electrons.stream>>>(
             electrons.tracks, electrons.queues.currentlyActive, secondaries, electrons.queues.nextActive,
             electrons.queues.relocate, globalScoring, scoringPerVolume);
 
@@ -344,7 +346,7 @@ void Shower(const vecgeom::cxx::VPlacedVolume *world, int numParticles, double e
                                                                                        electrons.queues.relocate);
 
         COPCORE_CUDA_CHECK(cudaEventRecord(electrons.event, electrons.stream));
-        COPCORE_CUDA_CHECK(cudaStreamWaitEvent(stream, electrons.event));
+        COPCORE_CUDA_CHECK(cudaStreamWaitEvent(stream, electrons.event, 0));
       }
 
       // *** POSITRONS ***
@@ -355,7 +357,7 @@ void Shower(const vecgeom::cxx::VPlacedVolume *world, int numParticles, double e
 
         relocateBlocks = std::min(numPositrons, MaxBlocks);
 
-        TransportElectrons</*IsElectron*/ false><<<transportBlocks, TransportThreads, 0, positrons.stream>>>(
+        TransportPositrons<<<transportBlocks, TransportThreads, 0, positrons.stream>>>(
             positrons.tracks, positrons.queues.currentlyActive, secondaries, positrons.queues.nextActive,
             positrons.queues.relocate, globalScoring, scoringPerVolume);
 
@@ -363,7 +365,7 @@ void Shower(const vecgeom::cxx::VPlacedVolume *world, int numParticles, double e
                                                                                        positrons.queues.relocate);
 
         COPCORE_CUDA_CHECK(cudaEventRecord(positrons.event, positrons.stream));
-        COPCORE_CUDA_CHECK(cudaStreamWaitEvent(stream, positrons.event));
+        COPCORE_CUDA_CHECK(cudaStreamWaitEvent(stream, positrons.event, 0));
       }
 
       // *** GAMMAS ***
@@ -382,7 +384,7 @@ void Shower(const vecgeom::cxx::VPlacedVolume *world, int numParticles, double e
                                                                                     gammas.queues.relocate);
 
         COPCORE_CUDA_CHECK(cudaEventRecord(gammas.event, gammas.stream));
-        COPCORE_CUDA_CHECK(cudaStreamWaitEvent(stream, gammas.event));
+        COPCORE_CUDA_CHECK(cudaStreamWaitEvent(stream, gammas.event, 0));
       }
 
       // *** END OF TRANSPORT ***

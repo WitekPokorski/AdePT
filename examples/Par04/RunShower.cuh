@@ -41,11 +41,7 @@ struct Track {
 
   __host__ __device__ void InitAsSecondary(const Track &parent)
   {
-    // Initialize a new PRNG state.
-    this->rngState = parent.rngState;
-    this->rngState.Skip(1 << 15);
-
-    // The caller is responsible to set the energy.
+    // The caller is responsible to branch a new RNG state and to set the energy.
     this->numIALeft[0] = -1.0;
     this->numIALeft[1] = -1.0;
     this->numIALeft[2] = -1.0;
@@ -58,10 +54,18 @@ struct Track {
   }
 };
 
+// Defined in TestEm3.cu
+extern __constant__ __device__ int Zero;
+
 class RanluxppDoubleEngine : public G4HepEmRandomEngine {
   // Wrapper functions to call into RanluxppDouble.
-  static __host__ __device__ double FlatWrapper(void *object) { return ((RanluxppDouble *)object)->Rndm(); }
-  static __host__ __device__ void FlatArrayWrapper(void *object, const int size, double *vect)
+  static __host__ __device__ __attribute__((noinline))
+  double FlatWrapper(void *object)
+  {
+    return ((RanluxppDouble *)object)->Rndm();
+  }
+  static __host__ __device__ __attribute__((noinline))
+  void FlatArrayWrapper(void *object, const int size, double *vect)
   {
     for (int i = 0; i < size; i++) {
       vect[i] = ((RanluxppDouble *)object)->Rndm();
@@ -72,9 +76,19 @@ public:
   __host__ __device__ RanluxppDoubleEngine(RanluxppDouble *engine)
       : G4HepEmRandomEngine(/*object=*/engine, &FlatWrapper, &FlatArrayWrapper)
   {
+#ifdef __CUDA_ARCH__
+    // This is a hack: The compiler cannot see that we're going to call the
+    // functions through their pointers, so it underestimates the number of
+    // required registers. By including calls to the (non-inlinable) functions
+    // we force the compiler to account for the register usage, even if this
+    // particular set of calls are not executed at runtime.
+    if (Zero) {
+      FlatWrapper(engine);
+      FlatArrayWrapper(engine, 0, nullptr);
+    }
+#endif
   }
 };
-
 
 // A data structure to manage slots in the track storage.
 class SlotManager {
@@ -120,19 +134,14 @@ struct Secondaries {
   ParticleGenerator gammas;
 };
 
-
 // Kernels in different TUs.
 __global__ void RelocateToNextVolume(Track *allTracks, const adept::MParray *relocateQueue);
 
-template <bool IsElectron>
-__global__ void TransportElectrons(Track *electrons, const adept::MParray *active, Secondaries secondaries,
-                                   adept::MParray *activeQueue, adept::MParray *relocateQueue,
-                                   GlobalScoring *globalScoring, ScoringPerVolume *scoringPerVolume);
-extern template __global__ void TransportElectrons</*IsElectron*/true>(
+__global__ void TransportElectrons(
     Track *electrons, const adept::MParray *active, Secondaries secondaries, adept::MParray *activeQueue,
     adept::MParray *relocateQueue, GlobalScoring *globalScoring, ScoringPerVolume *scoringPerVolume);
-extern template __global__ void TransportElectrons</*IsElectron*/false>(
-    Track *electrons, const adept::MParray *active, Secondaries secondaries, adept::MParray *activeQueue,
+__global__ void TransportPositrons(
+    Track *positrons, const adept::MParray *active, Secondaries secondaries, adept::MParray *activeQueue,
     adept::MParray *relocateQueue, GlobalScoring *globalScoring, ScoringPerVolume *scoringPerVolume);
 
 __global__ void TransportGammas(Track *gammas, const adept::MParray *active, Secondaries secondaries,
@@ -140,7 +149,7 @@ __global__ void TransportGammas(Track *gammas, const adept::MParray *active, Sec
                                 GlobalScoring *globalScoring, ScoringPerVolume *scoringPerVolume);
 
 // Constant data structures from G4HepEm accessed by the kernels.
-// (defined in RunShower.cu)
+// (defined in TestEm3.cu)
 extern __constant__ __device__ struct G4HepEmParameters g4HepEmPars;
 extern __constant__ __device__ struct G4HepEmData g4HepEmData;
 
