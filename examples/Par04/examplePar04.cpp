@@ -85,7 +85,8 @@ int main(int argc, char** argv)
 
   // Initialization of default Run manager
   auto* runManager =
-    G4RunManagerFactory::CreateRunManager(G4RunManagerType::Default);
+  //  G4RunManagerFactory::CreateRunManager(G4RunManagerType::Default);
+    G4RunManagerFactory::CreateRunManager(G4RunManagerType::Serial);
 
   // Detector geometry:
   auto detector = new Par04DetectorConstruction();

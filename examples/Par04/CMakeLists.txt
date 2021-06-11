@@ -9,7 +9,7 @@ endif()
 file(GLOB sources "${PROJECT_SOURCE_DIR}/examples/Par04/src/*.cc")
 
 # Par04
-add_executable(examplePar04 examplePar04.cpp RunShower.cpp RunShower.cu electrons.cu gammas.cu relocation.cu ${sources})
+add_executable(examplePar04 examplePar04.cpp AdeptIntegration.cpp AdeptIntegration.cu electrons.cu gammas.cu relocation.cu ${sources})
 
 message(STATUS "srcs: ${sources}")
 

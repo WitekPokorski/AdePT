@@ -35,18 +35,12 @@
 #include "Randomize.hh"
 #include "G4FastSimHitMaker.hh"
 
-#include "RunShower.h"
+#include "AdeptIntegration.h"
 
 #include "Par04EMShowerModel.hh"
 
 #include <VecGeom/base/Config.h>
 #include <VecGeom/management/GeoManager.h>
-
-enum MaterialCutCouples {
-  WorldMC = 0,
-  GapMC,
-  AbsorberMC,
-};
 
 Par04EMShowerModel::Par04EMShowerModel(G4String aModelName, G4Region* aEnvelope)
   : G4VFastSimulationModel(aModelName, aEnvelope)
@@ -115,25 +109,14 @@ void Par04EMShowerModel::DoIt(const G4FastTrack& aFastTrack,
   auto particlePosition  = aFastTrack.GetPrimaryTrackLocalPosition();
   auto particleDirection = aFastTrack.GetPrimaryTrackLocalDirection();
 
-std::cout << "Here I call AdePT to generate the shower" << std::endl;
+  std::cout << "Here I call AdePT to generate the shower" << std::endl;
+  auto pdg = aFastTrack.GetPrimaryTrack()->GetParticleDefinition()->GetPDGEncoding();
+  AdeptIntegration::Instance().AddTrack(pdg, energy, particlePosition[0], particlePosition[1], particlePosition[2],
+                                        particleDirection[0], particleDirection[1], particleDirection[2]);
 
-const vecgeom::VPlacedVolume *world = vecgeom::GeoManager::Instance().GetWorld();
 
-  // Place particles between the world boundary and the calorimeter.
-  double startX = particlePosition.z();
-//  double chargedTrackLength[NumVolumes];
-//  double energyDeposit[NumVolumes];
-  ScoringPerVolume scoringPerVolume;
-//  scoringPerVolume.chargedTrackLength = chargedTrackLength;
-//  scoringPerVolume.energyDeposit      = energyDeposit;
-  GlobalScoring globalScoring;
-
-int particles = 1;
-energy *= copcore::units::GeV;
-int batch = -1;
-
-// I need to pass the particle from Geant4 to AdePT and simulate the shower
-Shower(world, particles, energy, batch, startX, MCIndex, &scoringPerVolume, NumVolumes, &globalScoring);
+  // I need to pass the particle from Geant4 to AdePT and simulate the shower
+  AdeptIntegration::Instance().Shower(/*event*/ 0); // one should pass the actual event number
 
 // Create energy deposit in the detector
 // This will call appropriate sensitive detector class
@@ -152,16 +135,7 @@ void Par04EMShowerModel::Print() const
 
 void Par04EMShowerModel::Initialize()
 {
-
-// Map VecGeom volume IDs to Geant4 material-cuts couples.
- 
-  // Fill world and calorimeter.
-  MCIndex[0] = MCIndex[1] = WorldMC;
-  for (int i = 2; i < NumVolumes; i += (1 + NbOfAbsorbers)) {
-    MCIndex[i]     = WorldMC;
-    MCIndex[i + 1] = GapMC;
-    MCIndex[i + 2] = AbsorberMC;
-  }
-
-  CreateVecGeomWorld();  
+  // This is supposed to set the max batching for Adept to allocate properly the memory
+  AdeptIntegration::Instance().SetMaxBatch(25);
+  AdeptIntegration::Instance().Initialize();
 } 

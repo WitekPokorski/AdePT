@@ -56,6 +56,7 @@ class Par04DetectorConstruction : public G4VUserDetectorConstruction
   virtual ~Par04DetectorConstruction();
 
   virtual G4VPhysicalVolume* Construct() final;
+  void CreateVecGeomWorld();
   virtual void ConstructSDandField() final;
 
   // Set radius of the cylindrical detector
