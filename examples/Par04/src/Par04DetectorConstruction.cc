@@ -44,6 +44,7 @@
 
 #include "G4Region.hh"
 #include "G4RegionStore.hh"
+#include "G4ProductionCuts.hh"
 
 #include <VecGeom/base/Config.h>
 #include <VecGeom/base/Transformation3D.h>
@@ -218,6 +219,12 @@ G4VPhysicalVolume* Par04DetectorConstruction::Construct()
   attribs.SetForceSolid(true);
   fLogicCell->SetVisAttributes(attribs);
 
+  G4ProductionCuts *productionCuts = new G4ProductionCuts();
+  productionCuts->SetProductionCut(ProductionCut);
+  //
+  detectorRegion->SetProductionCuts(productionCuts);
+  //
+  
   Print();
   CreateVecGeomWorld();
   return fPhysicWorld;
