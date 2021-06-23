@@ -45,6 +45,7 @@
 #include "G4Region.hh"
 #include "G4RegionStore.hh"
 #include "G4ProductionCuts.hh"
+#include <G4ProductionCutsTable.hh>
 
 #include <VecGeom/base/Config.h>
 #include <VecGeom/base/Transformation3D.h>
@@ -124,6 +125,7 @@ G4VPhysicalVolume* Par04DetectorConstruction::Construct()
   // Region for fast simulation
   auto detectorRegion = new G4Region("DetectorRegion");
   detectorRegion->AddRootLogicalVolume(fLogicDetector);
+  detectorRegion->UsedInMassGeometry(true);
 
   //--------- Readout geometry ---------
   // Layers (along z)
@@ -225,6 +227,9 @@ G4VPhysicalVolume* Par04DetectorConstruction::Construct()
   detectorRegion->SetProductionCuts(productionCuts);
   //
   
+  G4ProductionCutsTable *theCoupleTable = G4ProductionCutsTable::GetProductionCutsTable();
+  theCoupleTable->UpdateCoupleTable(fPhysicWorld);
+
   Print();
   CreateVecGeomWorld();
   return fPhysicWorld;
