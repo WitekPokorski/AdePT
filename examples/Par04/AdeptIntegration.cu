@@ -279,7 +279,7 @@ void AdeptIntegration::InitializeGPU(const vecgeom::cxx::VPlacedVolume *world, i
   COPCORE_CUDA_CHECK(cudaMalloc(&fUserData.globalScoring_dev, sizeof(GlobalScoring)));
   COPCORE_CUDA_CHECK(cudaMemset(fUserData.globalScoring_dev, 0, sizeof(GlobalScoring)));
 
-  /*
+  
   ScoringPerVolume scoringPerVolume_devPtrs;
   scoringPerVolume_devPtrs.chargedTrackLength = fUserData.chargedTrackLength_dev;
   scoringPerVolume_devPtrs.energyDeposit      = fUserData.energyDeposit_dev;
@@ -287,7 +287,6 @@ void AdeptIntegration::InitializeGPU(const vecgeom::cxx::VPlacedVolume *world, i
   COPCORE_CUDA_CHECK(
       cudaMemcpy(fUserData.scoringPerVolume_dev, &scoringPerVolume_devPtrs, sizeof(ScoringPerVolume), cudaMemcpyHostToDevice));
 
-*/
 
   // initialize statistics
   COPCORE_CUDA_CHECK(cudaMalloc(&gpuState.stats_dev, sizeof(Stats)));
@@ -339,14 +338,6 @@ void AdeptIntegration::ShowerGPU(int event, TrackBuffer const &buffer)
   ParticleType &electrons = gpuState.particles[ParticleType::Electron];
   ParticleType &positrons = gpuState.particles[ParticleType::Positron];
   ParticleType &gammas    = gpuState.particles[ParticleType::Gamma];
-
-  ScoringPerVolume scoringPerVolume_devPtrs;
-  scoringPerVolume_devPtrs.chargedTrackLength = fUserData.chargedTrackLength_dev;
-  scoringPerVolume_devPtrs.energyDeposit      = fUserData.energyDeposit_dev;
-  COPCORE_CUDA_CHECK(cudaMalloc(&fUserData.scoringPerVolume_dev, sizeof(ScoringPerVolume)));
-  COPCORE_CUDA_CHECK(
-      cudaMemcpy(fUserData.scoringPerVolume_dev, &scoringPerVolume_devPtrs, sizeof(ScoringPerVolume), cudaMemcpyHostToDevice));
-
 
   vecgeom::Stopwatch timer;
   timer.Start();
@@ -509,8 +500,10 @@ void AdeptIntegration::ShowerGPU(int event, TrackBuffer const &buffer)
   COPCORE_CUDA_CHECK(cudaMemcpy(&fUserData.globalScoring, fUserData.globalScoring_dev, sizeof(GlobalScoring), cudaMemcpyDeviceToHost));
 
   // Transfer back the scoring per volume (charged track length and energy deposit).
-  COPCORE_CUDA_CHECK(cudaMemcpy(fUserData.scoringPerVolume.chargedTrackLength, scoringPerVolume_devPtrs.chargedTrackLength, //fUserData.scoringPerVolume_dev->chargedTrackLength,
-                                sizeof(double) * NumVolumes, cudaMemcpyDeviceToHost));
-  COPCORE_CUDA_CHECK(cudaMemcpy(fUserData.scoringPerVolume.energyDeposit, scoringPerVolume_devPtrs.energyDeposit, //fUserData.scoringPerVolume_dev->energyDeposit,
-                                sizeof(double) * NumVolumes, cudaMemcpyDeviceToHost));
+  COPCORE_CUDA_CHECK(cudaMemcpy(fUserData.scoringPerVolume.chargedTrackLength, fUserData.chargedTrackLength_dev,
+                                  sizeof(double) * NumVolumes, cudaMemcpyDeviceToHost));
+  COPCORE_CUDA_CHECK(cudaMemcpy(fUserData.scoringPerVolume.energyDeposit, fUserData.energyDeposit_dev,
+                                  sizeof(double) * NumVolumes, cudaMemcpyDeviceToHost));
+  
+
 }
