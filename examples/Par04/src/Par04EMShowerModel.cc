@@ -34,6 +34,8 @@
 #include "G4FastHit.hh"
 #include "Randomize.hh"
 #include "G4FastSimHitMaker.hh"
+#include "G4EventManager.hh"
+#include "G4Event.hh"
 
 #include "AdeptIntegration.h"
 
@@ -109,14 +111,19 @@ void Par04EMShowerModel::DoIt(const G4FastTrack& aFastTrack,
   auto particlePosition  = aFastTrack.GetPrimaryTrackLocalPosition();
   auto particleDirection = aFastTrack.GetPrimaryTrackLocalDirection();
 
-  std::cout << "Here I call AdePT to generate the shower" << std::endl;
   auto pdg = aFastTrack.GetPrimaryTrack()->GetParticleDefinition()->GetPDGEncoding();
+
+  std::cout << "Calling AdePT for particle " << pdg << " energy " << energy << " position " 
+  << particlePosition[0] << " " << particlePosition[1] << " " << particlePosition[2]
+  << " direction " <<  particleDirection[0] << " " << particleDirection[1] << " " << particleDirection[2] 
+  << std::endl;
+
   AdeptIntegration::Instance().AddTrack(pdg, energy, particlePosition[0], particlePosition[1], particlePosition[2],
                                         particleDirection[0], particleDirection[1], particleDirection[2]);
 
 
   // I need to pass the particle from Geant4 to AdePT and simulate the shower
-  AdeptIntegration::Instance().Shower(/*event*/ 0); // one should pass the actual event number
+  AdeptIntegration::Instance().Shower(G4EventManager::GetEventManager()->GetConstCurrentEvent()->GetEventID());
 
 // Create energy deposit in the detector
 // This will call appropriate sensitive detector class

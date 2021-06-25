@@ -18,19 +18,19 @@
 
 # run 100 events with parametrised simulation
 # by default all created models are active
-#/param/ActivateModel model
+/param/ActivateModel model
 /analysis/setFileName Par04_fastsim_100events.root
 /run/beamOn 100
 
 # run 100 events with modified parametrisation
-/Par04/fastSim/print
-/Par04/fastSim/transverseProfile/sigma 20 mm
-/Par04/fastSim/longitudinalProfile/beta 0.6
-/Par04/fastSim/longitudinalProfile/alpha 2.
-/Par04/fastSim/longitudinalProfile/maxDepth 20
-/Par04/fastSim/numberOfHits 500
-/analysis/setFileName Par04_fastsimModified_100events.root
-/run/beamOn 100
+#/Par04/fastSim/print
+#/Par04/fastSim/transverseProfile/sigma 20 mm
+#/Par04/fastSim/longitudinalProfile/beta 0.6
+#/Par04/fastSim/longitudinalProfile/alpha 2.
+#/Par04/fastSim/longitudinalProfile/maxDepth 20
+#/Par04/fastSim/numberOfHits 500
+#/analysis/setFileName Par04_fastsimModified_100events.root
+#/run/beamOn 100
 
 # run 100 events with full (detailed) simulation
 /param/InActivateModel model
