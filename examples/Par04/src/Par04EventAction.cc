@@ -53,6 +53,7 @@ void Par04EventAction::BeginOfEventAction(const G4Event*) { fTimer.Start(); }
 void Par04EventAction::EndOfEventAction(const G4Event* aEvent)
 {
   fTimer.Stop();
+  /*
   // Get hits collection ID (only once)
   if(fHitCollectionID == -1)
   {
@@ -71,12 +72,6 @@ void Par04EventAction::EndOfEventAction(const G4Event* aEvent)
   }
   // Get analysis manager
   auto analysisManager = G4AnalysisManager::Instance();
-  // Retrieve only once detector dimensions
-  if(fCellSizeZ == 0)
-  {
-    fCellSizeZ   = fDetector->GetLength() / fDetector->GetNbOfLayers();
-    fCellSizeRho = fDetector->GetRadius() / fDetector->GetNbOfRhoCells();
-  }
 
   // Retrieve information from primary vertex and primary particle
   // To calculate shower axis and entry point to the detector
@@ -107,7 +102,6 @@ void Par04EventAction::EndOfEventAction(const G4Event* aEvent)
   {
     hit     = static_cast<Par04Hit*>(hitsCollection->GetHit(iHit));
     hitZ    = hit->GetZid();
-    hitRho  = hit->GetRhoId();
     hitEn   = hit->GetEdep();
     hitType = hit->GetType();
     if(hitEn > 0)
@@ -156,4 +150,5 @@ void Par04EventAction::EndOfEventAction(const G4Event* aEvent)
   rSecondMoment /= totalEnergy;
   analysisManager->FillH1(8, tSecondMoment);
   analysisManager->FillH1(9, rSecondMoment);
+  */
 }

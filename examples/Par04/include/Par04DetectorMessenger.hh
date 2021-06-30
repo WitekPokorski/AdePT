@@ -66,18 +66,8 @@ class Par04DetectorMessenger : public G4UImessenger
   G4UIdirectory* fDetectorDir = nullptr;
   /// Command printing current settings
   G4UIcmdWithoutParameter* fPrintCmd;
-  /// Command to set the detector radius
-  G4UIcmdWithADoubleAndUnit* fDetectorRadiusCmd = nullptr;
-  /// Command to set the detector length
-  G4UIcmdWithADoubleAndUnit* fDetectorLengthCmd = nullptr;
-  /// Command to set the detector material
-  G4UIcmdWithAString* fDetectorMaterialCmd = nullptr;
   /// Command to set the number of layers
   G4UIcmdWithAnInteger* fNbLayersCmd = nullptr;
-  /// Command to set the number of radial cells
-  G4UIcmdWithAnInteger* fNbRhoCellsCmd = nullptr;
-  /// Command to set the number of cells in azimuthal angle
-  G4UIcmdWithAnInteger* fNbPhiCellsCmd = nullptr;
 };
 
 #endif

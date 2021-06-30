@@ -53,8 +53,6 @@ Par04Hit::Par04Hit(const Par04Hit& aRight)
 {
   fEdep   = aRight.fEdep;
   fZId    = aRight.fZId;
-  fRhoId  = aRight.fRhoId;
-  fPhiId  = aRight.fPhiId;
   fTime   = aRight.fTime;
   fPos    = aRight.fPos;
   fRot    = aRight.fRot;
@@ -68,8 +66,6 @@ const Par04Hit& Par04Hit::operator=(const Par04Hit& aRight)
 {
   fEdep   = aRight.fEdep;
   fZId    = aRight.fZId;
-  fRhoId  = aRight.fRhoId;
-  fPhiId  = aRight.fPhiId;
   fTime   = aRight.fTime;
   fPos    = aRight.fPos;
   fRot    = aRight.fRot;
@@ -82,14 +78,14 @@ const Par04Hit& Par04Hit::operator=(const Par04Hit& aRight)
 
 int Par04Hit::operator==(const Par04Hit& aRight) const
 {
-  return (fRhoId == aRight.fRhoId && fPhiId == aRight.fPhiId &&
-          fZId == aRight.fZId);
+  return (fZId == aRight.fZId);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void Par04Hit::Draw()
 {
+  /*
   G4VVisManager* pVVisManager = G4VVisManager::GetConcreteInstance();
   // Hits can be filtered out in visualisation
   if(!pVVisManager->FilterHit(*this))
@@ -124,6 +120,7 @@ void Par04Hit::Draw()
     attribs.SetForceSolid(true);
     pVVisManager->Draw(solid, attribs, trans);
   }
+  */
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -164,6 +161,6 @@ std::vector<G4AttValue>* Par04Hit::CreateAttValues() const
 void Par04Hit::Print()
 {
   std::cout << "\tHit " << fEdep / MeV << " MeV at " << fPos / cm
-            << " cm (R,phi,z)= (" << fRhoId << ", " << fPhiId << ", " << fZId
+            << " cm (z)= (" << fZId
             << "), " << fTime << " ns" << std::endl;
 }

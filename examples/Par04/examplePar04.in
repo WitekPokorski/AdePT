@@ -2,12 +2,12 @@
 #
 
 # setup detector dimensions
-/Par04/detector/setDetectorRadius 10 cm
-/Par04/detector/setDetectorLength 30 cm
-/Par04/detector/setDetectorMaterial G4_Pb
-/Par04/detector/setNbOfLayers 100
-/Par04/detector/setNbOfPhiCells 20
-/Par04/detector/setNbOfRhoCells 100
+#/Par04/detector/setDetectorRadius 10 cm
+#/Par04/detector/setDetectorLength 30 cm
+#/Par04/detector/setDetectorMaterial G4_Pb
+/Par04/detector/setNbOfLayers 50
+#/Par04/detector/setNbOfPhiCells 20
+#/Par04/detector/setNbOfRhoCells 100
 /Par04/detector/print
 
 # initialize

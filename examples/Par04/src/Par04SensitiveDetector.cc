@@ -39,12 +39,9 @@ Par04SensitiveDetector::Par04SensitiveDetector(G4String aName)
 }
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-Par04SensitiveDetector::Par04SensitiveDetector(G4String aName, G4int aNumLayers,
-                                               G4int aNumRho, G4int aNumPhi)
+Par04SensitiveDetector::Par04SensitiveDetector(G4String aName, G4int aNumLayers)
   : G4VSensitiveDetector(aName)
-  , fCellNoZ(aNumLayers)
-  , fCellNoRho(aNumRho)
-  , fCellNoPhi(aNumPhi)
+  , fNumLayers(aNumLayers)
 {
   collectionName.insert("hits");
 }
@@ -67,13 +64,11 @@ void Par04SensitiveDetector::Initialize(G4HCofThisEvent* aHCE)
   aHCE->AddHitsCollection(fHitCollectionID, fHitsCollection);
 
   // fill calorimeter hits with zero energy deposition
-  for(G4int iphi = 0; iphi < fCellNoPhi; iphi++)
-    for(G4int irho = 0; irho < fCellNoRho; irho++)
-      for(G4int iz = 0; iz < fCellNoZ; iz++)
-      {
-        Par04Hit* hit = new Par04Hit();
-        fHitsCollection->insert(hit);
-      }
+  for(G4int iz = 0; iz < fNumLayers; iz++)
+  {
+    Par04Hit* hit = new Par04Hit();
+    fHitsCollection->insert(hit);
+  }
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -141,11 +136,9 @@ G4bool Par04SensitiveDetector::ProcessHits(const G4FastHit* aHit,
 Par04Hit* Par04SensitiveDetector::RetrieveAndSetupHit(
   G4TouchableHistory* aTouchable)
 {
-  G4int rhoNo = aTouchable->GetCopyNumber(0);  // cell
-  G4int phiNo = aTouchable->GetCopyNumber(1);  // segment
-  G4int zNo   = aTouchable->GetCopyNumber(2);  // layer
+  G4int zNo   = aTouchable->GetCopyNumber(1);  // layer
 
-  std::size_t hitID = fCellNoRho * fCellNoZ * phiNo + fCellNoZ * rhoNo + zNo;
+  std::size_t hitID = zNo;
 
   if(hitID >= fHitsCollection->entries())
   {
@@ -153,14 +146,12 @@ Par04Hit* Par04SensitiveDetector::RetrieveAndSetupHit(
       "Par04SensitiveDetector::RetrieveAndSetupHit()", "InvalidSetup",
       FatalException,
       "Size of hit collection in Par04SensitiveDetector is smaller than the "
-      "number of cells created in Par04DetectorConstruction!");
+      "number of layers created in Par04DetectorConstruction!");
   }
   Par04Hit* hit = (*fHitsCollection)[hitID];
 
-  if(hit->GetRhoId() < 0)
+  if(hit->GetZid() < 0)
   {
-    hit->SetRhoId(rhoNo);
-    hit->SetPhiId(phiNo);
     hit->SetZid(zNo);
     hit->SetLogV(aTouchable->GetVolume(0)->GetLogicalVolume());
     G4AffineTransform transform = aTouchable->GetHistory()->GetTopTransform();

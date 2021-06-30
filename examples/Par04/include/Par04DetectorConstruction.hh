@@ -29,6 +29,7 @@
 #include "G4VUserDetectorConstruction.hh"
 #include "G4SystemOfUnits.hh"
 #include "G4Material.hh"
+#include "G4ThreeVector.hh"
 
 class Par04DetectorMessenger;
 class G4LogicalVolume;
@@ -59,31 +60,12 @@ class Par04DetectorConstruction : public G4VUserDetectorConstruction
   void CreateVecGeomWorld();
   virtual void ConstructSDandField() final;
 
-  // Set radius of the cylindrical detector
-  void SetRadius(G4double aRadius);
-  // Get radius of the cylindrical detector
-  inline G4double GetRadius() const { return fDetectorRadius; };
-  // Set length of the cylindrical detector (along z-axis)
-  void SetLength(G4double aLength);
-  // Get length of the cylindrical detector (along z-axis)
-  inline G4double GetLength() const { return fDetectorLength; };
-  // Set material of the detector (from NIST materials)
-  void SetMaterial(const G4String& aMaterial);
-  // Get name of the material of the detector
-  inline G4String GetMaterial() const { return fDetectorMaterial->GetName(); };
-
   // Set number of readout cells along z-axis
   inline void SetNbOfLayers(G4int aNumber) { fNbOfLayers = aNumber; };
   // Get number of readout cells along z-axis
   inline G4int GetNbOfLayers() const { return fNbOfLayers; };
-  // Set number of readout cells along radius of cylinder
-  inline void SetNbOfRhoCells(G4int aNumber) { fNbOfRhoCells = aNumber; };
-  // Get number of readout cells along radius of cylinder
-  inline G4int GetNbOfRhoCells() const { return fNbOfRhoCells; };
-  // Set number of readout cells in azimuthal angle
-  inline void SetNbOfPhiCells(G4int aNumber) { fNbOfPhiCells = aNumber; };
-  // Get number of readout cells in azimuthal angle
-  inline G4int GetNbOfPhiCells() const { return fNbOfPhiCells; };
+  // Set uniform magnetic field
+  inline void SetMagField(const G4ThreeVector &fv) { fMagFieldVector = fv; }
 
   // Print detector information
   void Print() const;
@@ -92,21 +74,16 @@ class Par04DetectorConstruction : public G4VUserDetectorConstruction
   /// Messenger that allows to modify geometry
   Par04DetectorMessenger* fDetectorMessenger;
   /// Logical volume of replicated cell
-  G4LogicalVolume* fLogicCell = nullptr;
-  /// World size (in each X, Y, Z dimension)
-  G4double fWorldSize = 10 * m;
-  /// Radius of the cylindrical detector
-  G4double fDetectorRadius = 10 * cm;
-  /// Length of the cylindrical detector (along z axis)
-  G4double fDetectorLength = 30 * cm;
-  /// Material of the detector
-  G4Material* fDetectorMaterial = nullptr;
+  G4LogicalVolume* fLogicLayer = nullptr;
+   /// Logical volume of gap
+  G4LogicalVolume* fLogicGap = nullptr;
+   /// Logical volume of absorber
+  G4LogicalVolume* fLogicAbsorber = nullptr;
   /// Number of layers = slices along z axis
-  G4int fNbOfLayers = 10;
-  /// Number of cells along radius
-  G4int fNbOfRhoCells = 10;
-  /// Number of cells in azimuthal angle
-  G4int fNbOfPhiCells = 10;
+  G4int fNbOfLayers = 50;
+  // field related members
+  G4ThreeVector fMagFieldVector;
+
 };
 
 #endif /* PAR03DETECTORCONSTRUCTION_H */

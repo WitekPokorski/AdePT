@@ -46,6 +46,7 @@ Par04RunAction::~Par04RunAction() { delete G4AnalysisManager::Instance(); }
 
 void Par04RunAction::BeginOfRunAction(const G4Run*)
 {
+  /*
   // Get detector dimensions
   G4int cellNumZ       = fDetector->GetNbOfLayers();
   G4int cellNumRho     = fDetector->GetNbOfRhoCells();
@@ -105,13 +106,16 @@ void Par04RunAction::BeginOfRunAction(const G4Run*)
 
   // Open an output file
   analysisManager->OpenFile();
+  */
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void Par04RunAction::EndOfRunAction(const G4Run*)
 {
+  /*
   auto analysisManager = G4AnalysisManager::Instance();
   analysisManager->Write();
   analysisManager->CloseFile();
+  */
 }
