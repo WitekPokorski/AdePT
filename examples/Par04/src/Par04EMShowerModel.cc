@@ -126,8 +126,14 @@ void Par04EMShowerModel::DoIt(const G4FastTrack& aFastTrack,
   AdeptIntegration::Instance().Shower(G4EventManager::GetEventManager()->GetConstCurrentEvent()->GetEventID());
 
 // Create energy deposit in the detector
-// This will call appropriate sensitive detector class
-//      fHitMaker->make(G4FastHit(position, energy / fNbOfHits), aFastTrack);
+
+
+for (auto id =0; id != NumVolumes; id++) {
+    std::cout << " ID " << id << " Charged-TrakL " << AdeptIntegration::Instance().fUserData.scoringPerVolume.chargedTrackLength[id] / copcore::units::mm
+              << " mm; Energy-Dep " << AdeptIntegration::Instance().fUserData.scoringPerVolume.energyDeposit[id] / copcore::units::MeV << " MeV" << std::endl; 
+    fHitMaker->make(G4FastHit(G4ThreeVector(id, 0, 0), AdeptIntegration::Instance().fUserData.scoringPerVolume.energyDeposit[id] / copcore::units::MeV), aFastTrack); 
+  } 
+
 //      generatedHits++;
     
   

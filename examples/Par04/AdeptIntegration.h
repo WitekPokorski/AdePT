@@ -61,7 +61,7 @@ private:
   int fMaxBatch {0};                   ///< Max batch size for allocating GPU memory
   TrackBuffer fBuffer;                 ///< Vector of buffers of tracks to/from device (per thread)
   TrackData *toDevice_dev { nullptr }; ///< Track buffer on device
-  UserData fUserData;                  ///< User data (to be removed)
+//  UserData fUserData;                  ///< User data (to be removed)
 
   void InitializeGPU(const vecgeom::cxx::VPlacedVolume *world, int max_batch);
   void ShowerGPU(int event, TrackBuffer const &buffer);
@@ -78,6 +78,8 @@ public:
   void Cleanup();
   /// @brief Interface for transporting a buffer of tracks in AdePT.
   void Shower(int event);
+  
+  UserData fUserData;
 
 };
 
