@@ -54,7 +54,7 @@ class Par04SensitiveDetector
 {
  public:
   Par04SensitiveDetector(G4String aName);
-  Par04SensitiveDetector(G4String aName, G4int aNumLayers);
+  Par04SensitiveDetector(G4String aName, G4int aNumLayers, G4int aNumAbsorbers);
   virtual ~Par04SensitiveDetector();
   /// Create hit collection
   virtual void Initialize(G4HCofThisEvent* HCE) final;
@@ -73,8 +73,10 @@ class Par04SensitiveDetector
   Par04HitsCollection* fHitsCollection = nullptr;
   /// ID of collection of hits
   G4int fHitCollectionID = -1;
-  /// Number of readout cells along z axis
+  /// Number of layers
   G4int fNumLayers = 50;
+  /// Number of absorbers
+  G4int fNumAbsorbers = 2;
 };
 
 #endif /* PAR03SENSITIVEDETECTOR_HH */

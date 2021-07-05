@@ -39,9 +39,10 @@ Par04SensitiveDetector::Par04SensitiveDetector(G4String aName)
 }
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-Par04SensitiveDetector::Par04SensitiveDetector(G4String aName, G4int aNumLayers)
+Par04SensitiveDetector::Par04SensitiveDetector(G4String aName, G4int aNumLayers, G4int aNumAbsorbers)
   : G4VSensitiveDetector(aName)
   , fNumLayers(aNumLayers)
+  , fNumAbsorbers(aNumAbsorbers)
 {
   collectionName.insert("hits");
 }
@@ -66,8 +67,11 @@ void Par04SensitiveDetector::Initialize(G4HCofThisEvent* aHCE)
   // fill calorimeter hits with zero energy deposition
   for(G4int iz = 0; iz < fNumLayers; iz++)
   {
-    Par04Hit* hit = new Par04Hit();
-    fHitsCollection->insert(hit);
+    for(G4int iz = 0; iz < fNumAbsorbers; iz++)
+    {
+      Par04Hit* hit = new Par04Hit();
+      fHitsCollection->insert(hit);
+    }
   }
 }
 
@@ -136,9 +140,10 @@ G4bool Par04SensitiveDetector::ProcessHits(const G4FastHit* aHit,
 Par04Hit* Par04SensitiveDetector::RetrieveAndSetupHit(
   G4TouchableHistory* aTouchable)
 {
-  G4int zNo   = aTouchable->GetCopyNumber(1);  // layer
+  G4int layer   = aTouchable->GetCopyNumber(1);  // layer
+  G4int abso    = aTouchable->GetCopyNumber(0);  // absorber
 
-  std::size_t hitID = zNo;
+  std::size_t hitID = 2 * layer + (abso - 1);
 
   if(hitID >= fHitsCollection->entries())
   {
@@ -152,7 +157,8 @@ Par04Hit* Par04SensitiveDetector::RetrieveAndSetupHit(
 
   if(hit->GetZid() < 0)
   {
-    hit->SetZid(zNo);
+    hit->SetZid(layer);
+    hit->SetAbsoid(abso);
     hit->SetLogV(aTouchable->GetVolume(0)->GetLogicalVolume());
     G4AffineTransform transform = aTouchable->GetHistory()->GetTopTransform();
     hit->SetRot(transform.NetRotation());

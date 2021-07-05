@@ -53,6 +53,7 @@ Par04Hit::Par04Hit(const Par04Hit& aRight)
 {
   fEdep   = aRight.fEdep;
   fZId    = aRight.fZId;
+  fAbsoId = aRight.fAbsoId;
   fTime   = aRight.fTime;
   fPos    = aRight.fPos;
   fRot    = aRight.fRot;
@@ -66,6 +67,7 @@ const Par04Hit& Par04Hit::operator=(const Par04Hit& aRight)
 {
   fEdep   = aRight.fEdep;
   fZId    = aRight.fZId;
+  fAbsoId = aRight.fAbsoId;
   fTime   = aRight.fTime;
   fPos    = aRight.fPos;
   fRot    = aRight.fRot;
@@ -78,7 +80,7 @@ const Par04Hit& Par04Hit::operator=(const Par04Hit& aRight)
 
 int Par04Hit::operator==(const Par04Hit& aRight) const
 {
-  return (fZId == aRight.fZId);
+  return (fZId == aRight.fZId && fAbsoId == aRight.fAbsoId);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -161,6 +163,6 @@ std::vector<G4AttValue>* Par04Hit::CreateAttValues() const
 void Par04Hit::Print()
 {
   std::cout << "\tHit " << fEdep / MeV << " MeV at " << fPos / cm
-            << " cm (z)= (" << fZId
+            << " cm (z)= (" << fZId << "," << fAbsoId
             << "), " << fTime << " ns" << std::endl;
 }

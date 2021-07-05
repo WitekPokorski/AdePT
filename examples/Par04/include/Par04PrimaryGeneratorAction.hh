@@ -23,13 +23,16 @@
 // * acceptance of all terms of the Geant4 Software license.          *
 // ********************************************************************
 //
-#ifndef PAR03PRIMARYGENERATORACTION_HH
-#define PAR03PRIMARYGENERATORACTION_HH
+#ifndef PAR04PRIMARYGENERATORACTION_HH
+#define PAR04PRIMARYGENERATORACTION_HH
 
 #include "G4VUserPrimaryGeneratorAction.hh"
+#include "G4ParticleGun.hh"
+#include "globals.hh"
 
-class G4ParticleGun;
 class G4Event;
+class Par04DetectorConstruction;
+class Par04PrimaryGeneratorMessenger;
 
 /**
  * @brief Generator of particles
@@ -42,14 +45,20 @@ class G4Event;
 class Par04PrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
 {
  public:
-  Par04PrimaryGeneratorAction();
+  Par04PrimaryGeneratorAction(Par04DetectorConstruction*);
   virtual ~Par04PrimaryGeneratorAction();
 
+  void SetDefaultKinematic();
+  void SetRndmBeam(G4double val) { fRndmBeam = val;}
   virtual void GeneratePrimaries(G4Event*) final;
 
  private:
   /// Particle gun
   G4ParticleGun* fParticleGun;
+  Par04DetectorConstruction*  fDetector;
+  G4double fRndmBeam;   //lateral random beam extension in fraction sizeYZ/2
+
+  Par04PrimaryGeneratorMessenger* fGunMessenger;
 };
 
-#endif /* PAR03PRIMARYGENERATORACTION_HH */
+#endif /* PAR04PRIMARYGENERATORACTION_HH */

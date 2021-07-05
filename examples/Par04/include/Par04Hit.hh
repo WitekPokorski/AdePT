@@ -87,7 +87,11 @@ class Par04Hit : public G4VHit
   inline void SetZid(G4int aZ) { fZId = aZ; }
   /// Get Z id of the cell in the readout segmentation
   inline G4int GetZid() const { return fZId; }
-  /// Set time
+  /// Get absorber id of the cell in the readout segmentation
+  inline G4int GetAbsoid() const { return fAbsoId; }
+  /// Set absorber id of the cell in the readout segmentation
+  inline void SetAbsoid(G4int aZ) { fAbsoId = aZ; }
+ /// Set time
   inline void SetTime(G4double aTime) { fTime = aTime; }
   /// Get time
   inline G4double GetTime() const { return fTime; }
@@ -105,6 +109,8 @@ class Par04Hit : public G4VHit
   G4double fEdep = 0;
   /// Z ID of readout cell
   G4int fZId = -1;
+  /// Absorber ID of readout cell
+  G4int fAbsoId = -1;
   /// Position
   G4ThreeVector fPos;
   /// Rotation

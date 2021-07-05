@@ -49,7 +49,7 @@ void Par04ActionInitialisation::BuildForMaster() const
 
 void Par04ActionInitialisation::Build() const
 {
-  SetUserAction(new Par04PrimaryGeneratorAction());
+  SetUserAction(new Par04PrimaryGeneratorAction(fDetector));
   SetUserAction(new Par04EventAction(fDetector));
   SetUserAction(new Par04RunAction(fDetector));
 }

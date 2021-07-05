@@ -31,21 +31,23 @@
 #include "G4Material.hh"
 #include "G4ThreeVector.hh"
 
-class Par04DetectorMessenger;
+class G4Box;
 class G4LogicalVolume;
+class G4VPhysicalVolume;
+class G4Material;
+
+class G4UniformMagField;
+class G4FieldManager;
+class Par04PrimaryGeneratorAction;
+
+class Par04DetectorMessenger;
+const G4int kMaxAbsor = 10; // 0 + 9
 
 /**
  * @brief Detector construction.
  *
- * Creates a cylindrical detector, with cylinder axis along Z-axis. It is placed
- * in the world volume so that its bases are located at z=0 and z=Length.
- * Dimensions of the detector (Radius and Length) and material can be set using
- * the UI commands.
- * Readout geometry of the detector is created, and can be set by UI commands.
- * Cells are created along z-axis, azimuthal angle, and radius (cylindrical
- * segmentation).
  * Sensitive detector Par04SensitiveDetector is attached to the
- * cell volume.
+ * Absorber volumes.
  * Region for the detector is created as an envelope of the fast simulation.
  *
  */
@@ -60,12 +62,34 @@ class Par04DetectorConstruction : public G4VUserDetectorConstruction
   void CreateVecGeomWorld();
   virtual void ConstructSDandField() final;
 
-  // Set number of readout cells along z-axis
-  inline void SetNbOfLayers(G4int aNumber) { fNbOfLayers = aNumber; };
-  // Get number of readout cells along z-axis
-  inline G4int GetNbOfLayers() const { return fNbOfLayers; };
+  void SetNbOfLayers(G4int);
+  void SetNbOfAbsor(G4int);
+  void SetAbsorMaterial(G4int, const G4String &);
+  void SetAbsorThickness(G4int, G4double);
+
+  void SetWorldMaterial(const G4String &);
+  void SetCalorSizeYZ(G4double);
+
+  G4double GetWorldSizeX() { return fWorldSizeX; }
+  G4double GetWorldSizeYZ() { return fWorldSizeYZ; }
+
+  G4double GetCalorThickness() { return fCalorThickness; }
+  G4double GetCalorSizeYZ() { return fCalorSizeYZ; }
+
+  G4int GetNbOfLayers() { return fNbOfLayers; }
+
+  G4int GetNbOfAbsor() { return fNbOfAbsor; }
+  G4Material *GetAbsorMaterial(G4int i) { return fAbsorMaterial[i]; }
+  G4double GetAbsorThickness(G4int i) { return fAbsorThickness[i]; }
+
+  const G4VPhysicalVolume *GetphysiWorld() { return fPhysiWorld; }
+  const G4Material *GetWorldMaterial() { return fDefaultMaterial; }
+  const G4VPhysicalVolume *GetAbsorber(G4int i) { return fPhysiAbsor[i]; }
+
+
   // Set uniform magnetic field
   inline void SetMagField(const G4ThreeVector &fv) { fMagFieldVector = fv; }
+  void SetPrimaryGenerator(Par04PrimaryGeneratorAction *pg) { fPrimaryGenerator = pg; }
 
   // Print detector information
   void Print() const;
@@ -73,16 +97,41 @@ class Par04DetectorConstruction : public G4VUserDetectorConstruction
  private:
   /// Messenger that allows to modify geometry
   Par04DetectorMessenger* fDetectorMessenger;
-  /// Logical volume of replicated cell
-  G4LogicalVolume* fLogicLayer = nullptr;
-   /// Logical volume of gap
-  G4LogicalVolume* fLogicGap = nullptr;
-   /// Logical volume of absorber
-  G4LogicalVolume* fLogicAbsorber = nullptr;
+
+  G4int fNbOfAbsor = 2;
+  G4Material *fAbsorMaterial[kMaxAbsor];
+  G4double fAbsorThickness[kMaxAbsor];
+
   /// Number of layers = slices along z axis
   G4int fNbOfLayers = 50;
+  G4double fLayerThickness;
+
+  G4double fCalorSizeYZ = 40 * cm;
+  G4double fCalorThickness;
+
+  G4Material *fDefaultMaterial;
+  G4double fWorldSizeYZ;
+  G4double fWorldSizeX;
+
+  G4Box *fSolidWorld;
+  G4LogicalVolume *fLogicWorld;
+  G4VPhysicalVolume *fPhysiWorld;
+
+  G4Box *fSolidCalor;
+  G4LogicalVolume *fLogicCalor;
+  G4VPhysicalVolume *fPhysiCalor;
+
+  G4Box *fSolidLayer;
+  G4LogicalVolume *fLogicLayer;
+  G4VPhysicalVolume *fPhysiLayer;
+
+  G4Box *fSolidAbsor[kMaxAbsor];
+  G4LogicalVolume *fLogicAbsor[kMaxAbsor];
+  G4VPhysicalVolume *fPhysiAbsor[kMaxAbsor];
+
   // field related members
   G4ThreeVector fMagFieldVector;
+  Par04PrimaryGeneratorAction *fPrimaryGenerator;
 
 };
 

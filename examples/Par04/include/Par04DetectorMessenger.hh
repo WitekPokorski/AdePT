@@ -35,6 +35,7 @@ class G4UIcmdWithoutParameter;
 class G4UIcmdWithAnInteger;
 class G4UIcmdWithADoubleAndUnit;
 class G4UIcmdWithAString;
+class G4UIcmdWith3VectorAndUnit;
 
 /**
  * @brief Detector messenger.
@@ -65,9 +66,14 @@ class Par04DetectorMessenger : public G4UImessenger
   /// Command to set the directory for detector settings /Par04/detector
   G4UIdirectory* fDetectorDir = nullptr;
   /// Command printing current settings
-  G4UIcmdWithoutParameter* fPrintCmd;
-  /// Command to set the number of layers
-  G4UIcmdWithAnInteger* fNbLayersCmd = nullptr;
+  G4UIcmdWithoutParameter* fPrintCmd = nullptr;
+  
+  G4UIcmdWithADoubleAndUnit* fSizeYZCmd = nullptr;
+  G4UIcmdWithAnInteger*      fNbLayersCmd = nullptr;
+  G4UIcmdWithAnInteger*      fNbAbsorCmd = nullptr;
+  G4UIcommand*               fAbsorCmd = nullptr;
+  //
+  G4UIcmdWith3VectorAndUnit* fFieldCmd = nullptr;
 };
 
 #endif

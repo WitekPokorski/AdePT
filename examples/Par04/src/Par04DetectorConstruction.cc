@@ -23,6 +23,7 @@
 // * acceptance of all terms of the Geant4 Software license.          *
 // ********************************************************************
 //
+#include "Par04PrimaryGeneratorAction.hh"
 #include "Par04DetectorConstruction.hh"
 #include "Par04DetectorMessenger.hh"
 #include "Par04SensitiveDetector.hh"
@@ -50,6 +51,11 @@
 #include "G4ProductionCuts.hh"
 #include <G4ProductionCutsTable.hh>
 
+#include "G4GeometryManager.hh"
+#include "G4PhysicalVolumeStore.hh"
+#include "G4LogicalVolumeStore.hh"
+#include "G4SolidStore.hh"
+
 #include <VecGeom/base/Config.h>
 #include <VecGeom/base/Transformation3D.h>
 #include <VecGeom/management/GeoManager.h>
@@ -74,17 +80,24 @@ Par04DetectorConstruction::~Par04DetectorConstruction() {}
 
 G4VPhysicalVolume* Par04DetectorConstruction::Construct()
 {
-  constexpr double CalorSizeYZ       = 40 * cm;
-  constexpr int NbOfLayers           = 50;
-  constexpr int NbOfAbsorbers        = 2;
-  constexpr double GapThickness      = 2.3 * mm;
-  constexpr double AbsorberThickness = 5.7 * mm;
+  // Compute derived parameters of the calorimeter
+  fLayerThickness = 0.;
+  for (G4int iAbs = 1; iAbs <= fNbOfAbsor; iAbs++) {
+    fLayerThickness += fAbsorThickness[iAbs];
+  }
+  fCalorThickness = fNbOfLayers * fLayerThickness;
+  fWorldSizeX     = 1.2 * fCalorThickness;
+  fWorldSizeYZ    = 1.2 * fCalorSizeYZ;
+  // update the primary generator
+  if (fPrimaryGenerator) {
+    fPrimaryGenerator->SetDefaultKinematic();
+  }
 
-  constexpr double LayerThickness = GapThickness + AbsorberThickness;
-  constexpr double CalorThickness = NbOfLayers * LayerThickness;
-
-  constexpr double WorldSizeX  = 1.2 * CalorThickness;
-  constexpr double WorldSizeYZ = 1.2 * CalorSizeYZ;
+  // Cleanup old geometry
+  G4GeometryManager::GetInstance()->OpenGeometry();
+  G4PhysicalVolumeStore::GetInstance()->Clean();
+  G4LogicalVolumeStore::GetInstance()->Clean();
+  G4SolidStore::GetInstance()->Clean();
 
   //--------- Material definition ---------
   const char *WorldMaterial    = "G4_Galactic";
@@ -95,42 +108,44 @@ G4VPhysicalVolume* Par04DetectorConstruction::Construct()
   G4Material *gap_mat      = G4NistManager::Instance()->FindOrBuildMaterial(GapMaterial);
   G4Material *absorber_mat = G4NistManager::Instance()->FindOrBuildMaterial(AbsorberMaterial);
 
-  auto SolidWorld = new G4Box("World", WorldSizeX / 2., WorldSizeYZ / 2., WorldSizeYZ / 2.);
-  auto LogicWorld = new G4LogicalVolume(SolidWorld, default_mat, "World");
-  auto PhysiWorld = new G4PVPlacement(0, G4ThreeVector(), LogicWorld, "World", 0, false, 0);
+  fSolidWorld = new G4Box("World", fWorldSizeX / 2., fWorldSizeYZ / 2., fWorldSizeYZ / 2.);
+  fLogicWorld = new G4LogicalVolume(fSolidWorld, default_mat, "World");
+  fPhysiWorld = new G4PVPlacement(0, G4ThreeVector(), fLogicWorld, "World", 0, false, 0);
 
-  auto SolidCalor = new G4Box("Calorimeter", CalorThickness / 2., CalorSizeYZ / 2., CalorSizeYZ / 2.);
-  auto LogicCalor = new G4LogicalVolume(SolidCalor, default_mat, "Calorimeter");
-  auto PhysiCalor = new G4PVPlacement(0, G4ThreeVector(), LogicCalor, "Calorimeter", LogicWorld, false, 0);
+  fSolidCalor = new G4Box("Calorimeter", fCalorThickness / 2., fCalorSizeYZ / 2., fCalorSizeYZ / 2.);
+  fLogicCalor = new G4LogicalVolume(fSolidCalor, default_mat, "Calorimeter");
+  fPhysiCalor = new G4PVPlacement(0, G4ThreeVector(), fLogicCalor, "Calorimeter", fLogicWorld, false, 0);
 
   //
   // Layers
   //
 
-  auto SolidLayer = new G4Box("Layer", LayerThickness / 2, CalorSizeYZ / 2, CalorSizeYZ / 2);
-  fLogicLayer     = new G4LogicalVolume(SolidLayer, default_mat, "Layer");
-  auto PhysiLayer = new G4PVReplica("Layer", fLogicLayer, LogicCalor, kXAxis, NbOfLayers, LayerThickness);
+  fSolidLayer = new G4Box("Layer", fLayerThickness / 2, fCalorSizeYZ / 2, fCalorSizeYZ / 2);
+  fLogicLayer = new G4LogicalVolume(fSolidLayer, default_mat, "Layer");
+  fPhysiLayer = new G4PVReplica("Layer", fLogicLayer, fLogicCalor, kXAxis, fNbOfLayers, fLayerThickness);
 
   //
   // Absorbers
   //
+  G4double xfront = -0.5 * fLayerThickness;
+  for (G4int k = 1; k <= fNbOfAbsor; k++) {
+    fSolidAbsor[k] = new G4Box("Absorber", // its name
+                               fAbsorThickness[k] / 2, fCalorSizeYZ / 2, fCalorSizeYZ / 2);
 
-  G4double xfront = -0.5 * LayerThickness;
-  auto SolidGap = new G4Box("Gap", GapThickness / 2, CalorSizeYZ / 2, CalorSizeYZ / 2);
-  fLogicGap     = new G4LogicalVolume(SolidGap, gap_mat, "Gap_Pb");
-  G4double xcenter = xfront + 0.5 * GapThickness;
-  xfront += GapThickness;
-  auto PhysiGap = new G4PVPlacement(0, G4ThreeVector(xcenter, 0., 0.), fLogicGap, "Gap_Pb", fLogicLayer, false, 0);
+    fLogicAbsor[k] = new G4LogicalVolume(fSolidAbsor[k],    // its solid
+                                         fAbsorMaterial[k], // its material
+                                         fAbsorMaterial[k]->GetName());
 
-  auto SolidAbsorber = new G4Box("Gap", AbsorberThickness / 2, CalorSizeYZ / 2, CalorSizeYZ / 2);
-  fLogicAbsorber     = new G4LogicalVolume(SolidAbsorber, absorber_mat, "Absorber_LAr");
-  xcenter = xfront + 0.5 * AbsorberThickness;
-  xfront += AbsorberThickness;
-  auto PhysiAbsorber = new G4PVPlacement(0, G4ThreeVector(xcenter, 0., 0.), fLogicAbsorber, "Absorber_LAr", fLogicLayer, false, 0);
+    G4double xcenter = xfront + 0.5 * fAbsorThickness[k];
+    xfront += fAbsorThickness[k];
+    fPhysiAbsor[k] = new G4PVPlacement(0, G4ThreeVector(xcenter, 0., 0.), fLogicAbsor[k], fAbsorMaterial[k]->GetName(),
+                                       fLogicLayer, false,
+                                       k); // copy number
+  }
 
   // Region for fast simulation
   auto detectorRegion = new G4Region("DetectorRegion");
-  detectorRegion->AddRootLogicalVolume(LogicCalor);
+  detectorRegion->AddRootLogicalVolume(fLogicCalor);
   detectorRegion->UsedInMassGeometry(true);
 
   G4ProductionCuts *productionCuts = new G4ProductionCuts();
@@ -140,11 +155,11 @@ G4VPhysicalVolume* Par04DetectorConstruction::Construct()
   //
   
   G4ProductionCutsTable *theCoupleTable = G4ProductionCutsTable::GetProductionCutsTable();
-  theCoupleTable->UpdateCoupleTable(PhysiWorld);
+  theCoupleTable->UpdateCoupleTable(fPhysiWorld);
 
-  Print();
+  //Print();
   CreateVecGeomWorld();
-  return PhysiWorld;
+  return fPhysiWorld;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -166,15 +181,12 @@ void Par04DetectorConstruction::ConstructSDandField()
     G4cout << G4endl << " *** NO MAGNETIC FIELD SET  *** " << G4endl << G4endl;
   }
 
-  Par04SensitiveDetector* caloSD_gap = new Par04SensitiveDetector(
-    "sensitiveDetectorGap", fNbOfLayers);
-  G4SDManager::GetSDMpointer()->AddNewDetector(caloSD_gap);
-  SetSensitiveDetector(fLogicGap, caloSD_gap);
-
-  Par04SensitiveDetector* caloSD_absorber = new Par04SensitiveDetector(
-    "sensitiveDetectorAbsorber", fNbOfLayers);
-  G4SDManager::GetSDMpointer()->AddNewDetector(caloSD_absorber);
-  SetSensitiveDetector(fLogicAbsorber, caloSD_absorber);
+  Par04SensitiveDetector* caloSD = new Par04SensitiveDetector(
+    "sensitiveDetector", fNbOfLayers, fNbOfAbsor);
+  G4SDManager::GetSDMpointer()->AddNewDetector(caloSD);
+  for (G4int k = 1; k <= fNbOfAbsor; k++) {  
+    SetSensitiveDetector(fLogicAbsor[k], caloSD);
+  }
 
   auto detectorRegion =
     G4RegionStore::GetInstance()->GetRegion("DetectorRegion");
@@ -186,9 +198,19 @@ void Par04DetectorConstruction::ConstructSDandField()
 
 void Par04DetectorConstruction::Print() const
 {
-  G4cout << "\n------------------------------------------------------"
-         << "\n--- Number of layers:\t" << fNbOfLayers;
-  G4cout << "-----------------------------------------------------" << G4endl;
+  G4cout << "\n-------------------------------------------------------------"
+         << "\n ---> The calorimeter is " << fNbOfLayers << " layers of:";
+  for (G4int i = 1; i <= fNbOfAbsor; i++) {
+    G4cout << "\n \t" << std::setw(12) << fAbsorMaterial[i]->GetName() << ": " << std::setw(6)
+           << G4BestUnit(fAbsorThickness[i], "Length");
+  }
+  G4cout << "\n-------------------------------------------------------------\n";
+
+  //G4cout << "\n" << fDefaultMaterial << G4endl;
+  for (G4int j = 1; j <= fNbOfAbsor; j++)
+    G4cout << "\n" << fAbsorMaterial[j] << G4endl;
+
+  G4cout << "\n-------------------------------------------------------------\n";
 }
 
 void Par04DetectorConstruction::CreateVecGeomWorld()
@@ -235,4 +257,93 @@ void Par04DetectorConstruction::CreateVecGeomWorld()
   }
 
   vecgeom::GeoManager::Instance().SetWorldAndClose(worldPlaced);
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void Par04DetectorConstruction::SetWorldMaterial(const G4String &material)
+{
+  // search the material by its name
+  G4Material *pttoMaterial = G4NistManager::Instance()->FindOrBuildMaterial(material);
+  if (pttoMaterial) fDefaultMaterial = pttoMaterial;
+  G4RunManager::GetRunManager()->PhysicsHasBeenModified();
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void Par04DetectorConstruction::SetNbOfLayers(G4int ival)
+{
+  // set the number of Layers
+  //
+  if (ival < 1) {
+    G4cout << "\n --->warning from SetfNbOfLayers: " << ival << " must be at least 1. Command refused" << G4endl;
+    return;
+  }
+  fNbOfLayers = ival;
+  //G4RunManager::GetRunManager()->ReinitializeGeometry();
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void Par04DetectorConstruction::SetNbOfAbsor(G4int ival)
+{
+  // set the number of Absorbers
+  //
+  if (ival < 1 || ival > (kMaxAbsor - 1)) {
+    G4cout << "\n ---> warning from SetfNbOfAbsor: " << ival << " must be at least 1 and and most " << kMaxAbsor - 1
+           << ". Command refused" << G4endl;
+    return;
+  }
+  fNbOfAbsor = ival;
+  //G4RunManager::GetRunManager()->ReinitializeGeometry();
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void Par04DetectorConstruction::SetAbsorMaterial(G4int ival, const G4String &material)
+{
+  // search the material by its name
+  //
+  if (ival > fNbOfAbsor || ival <= 0) {
+    G4cout << "\n --->warning from SetAbsorMaterial: absor number " << ival << " out of range. Command refused"
+           << G4endl;
+    return;
+  }
+
+  G4Material *pttoMaterial = G4NistManager::Instance()->FindOrBuildMaterial(material);
+  if (pttoMaterial) fAbsorMaterial[ival] = pttoMaterial;
+  //G4RunManager::GetRunManager()->PhysicsHasBeenModified();
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void Par04DetectorConstruction::SetAbsorThickness(G4int ival, G4double val)
+{
+  // change Absorber thickness
+  //
+  if (ival > fNbOfAbsor || ival <= 0) {
+    G4cout << "\n --->warning from SetAbsorThickness: absor number " << ival << " out of range. Command refused"
+           << G4endl;
+    return;
+  }
+  if (val <= DBL_MIN) {
+    G4cout << "\n --->warning from SetAbsorThickness: thickness " << val << " out of range. Command refused" << G4endl;
+    return;
+  }
+  fAbsorThickness[ival] = val;
+  //G4RunManager::GetRunManager()->ReinitializeGeometry();
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void Par04DetectorConstruction::SetCalorSizeYZ(G4double val)
+{
+  // change the transverse size
+  //
+  if (val <= DBL_MIN) {
+    G4cout << "\n --->warning from SetfCalorSizeYZ: thickness " << val << " out of range. Command refused" << G4endl;
+    return;
+  }
+  fCalorSizeYZ = val;
+  //G4RunManager::GetRunManager()->ReinitializeGeometry();
 }
