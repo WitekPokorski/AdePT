@@ -44,6 +44,11 @@ struct GlobalScoring {
   unsigned long long numGammas;
   unsigned long long numElectrons;
   unsigned long long numPositrons;
+
+  void Print() {
+    printf("Global scoring: stpChg=%llu stpNeu=%llu hits=%llu numGam=%llu numEle=%llu numPos=%llu\n",
+      chargedSteps, neutralSteps, hits, numGammas, numElectrons, numPositrons);
+  }
 };
 
 struct ScoringPerVolume {

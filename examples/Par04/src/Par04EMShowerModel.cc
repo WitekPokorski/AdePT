@@ -113,25 +113,28 @@ void Par04EMShowerModel::DoIt(const G4FastTrack& aFastTrack,
 
   auto pdg = aFastTrack.GetPrimaryTrack()->GetParticleDefinition()->GetPDGEncoding();
 
-  std::cout << "Calling AdePT for particle " << pdg << " energy " << energy << " position " 
+  int tid = G4Threading::G4GetThreadId();
+  if (tid < 0) tid = 0;
+
+  std::cout << "Thread " << tid << " calling AdePT for particle " << pdg << " energy " << energy << " position " 
   << particlePosition[0] << " " << particlePosition[1] << " " << particlePosition[2]
   << " direction " <<  particleDirection[0] << " " << particleDirection[1] << " " << particleDirection[2] 
   << std::endl;
 
-  AdeptIntegration::Instance().AddTrack(pdg, energy, particlePosition[0], particlePosition[1], particlePosition[2],
+  AdeptIntegration::Instance().AddTrack(tid, pdg, energy, particlePosition[0], particlePosition[1], particlePosition[2],
                                         particleDirection[0], particleDirection[1], particleDirection[2]);
 
 
   // I need to pass the particle from Geant4 to AdePT and simulate the shower
-  AdeptIntegration::Instance().Shower(G4EventManager::GetEventManager()->GetConstCurrentEvent()->GetEventID());
+  AdeptIntegration::Instance().Shower(G4EventManager::GetEventManager()->GetConstCurrentEvent()->GetEventID(), tid);
 
 // Create energy deposit in the detector
 
 
 for (auto id =0; id != NumVolumes; id++) {
-    std::cout << " ID " << id << " Charged-TrakL " << AdeptIntegration::Instance().fUserData.scoringPerVolume.chargedTrackLength[id] / copcore::units::mm
-              << " mm; Energy-Dep " << AdeptIntegration::Instance().fUserData.scoringPerVolume.energyDeposit[id] / copcore::units::MeV << " MeV" << std::endl; 
-    fHitMaker->make(G4FastHit(G4ThreeVector(id, 0, 0), AdeptIntegration::Instance().fUserData.scoringPerVolume.energyDeposit[id] / copcore::units::MeV), aFastTrack); 
+    std::cout << " ID " << id << " Charged-TrakL " << AdeptIntegration::Instance().fUserData[tid].scoringPerVolume.chargedTrackLength[id] / copcore::units::mm
+              << " mm; Energy-Dep " << AdeptIntegration::Instance().fUserData[tid].scoringPerVolume.energyDeposit[id] / copcore::units::MeV << " MeV" << std::endl; 
+    fHitMaker->make(G4FastHit(G4ThreeVector(id, 0, 0), AdeptIntegration::Instance().fUserData[tid].scoringPerVolume.energyDeposit[id] / copcore::units::MeV), aFastTrack); 
   } 
 
 //      generatedHits++;

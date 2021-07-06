@@ -18,6 +18,9 @@
 #include <VecGeom/backend/cuda/Interface.h>
 #endif
 
+#include <G4TransportationManager.hh>
+#include <G4UniformMagField.hh>
+#include <G4FieldManager.hh>
 #include <G4HepEmData.hh>
 #include <G4HepEmElectronInit.hh>
 #include <G4HepEmGammaInit.hh>
@@ -34,6 +37,7 @@ __constant__ __device__ struct G4HepEmParameters g4HepEmPars;
 __constant__ __device__ struct G4HepEmData g4HepEmData;
 
 __constant__ __device__ int *MCIndex = nullptr;
+__constant__ __device__ double BzFieldValue = 0;
 
 __constant__ __device__ int Zero = 0;
 
@@ -89,7 +93,7 @@ struct GPUstate {
   Stats *stats {nullptr};
 };
 
-static GPUstate gpuState;
+static GPUstate gpuState[AdeptIntegration::kMaxThreads];
 
 static G4HepEmState *InitG4HepEm()
 {
@@ -152,6 +156,7 @@ __global__ void InitParticleQueues(ParticleQueues queues, size_t Capacity)
 __global__ void InitTracks(AdeptIntegration::TrackData *trackinfo, int ntracks, int event, Secondaries secondaries,
                            const vecgeom::VPlacedVolume *world, GlobalScoring *globalScoring)
 {
+  constexpr unsigned long kMaxTracks = 10000;
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < ntracks; i += blockDim.x * gridDim.x) {
     ParticleGenerator *generator = nullptr;
     switch (trackinfo[i].pdg) {
@@ -170,7 +175,7 @@ __global__ void InitTracks(AdeptIntegration::TrackData *trackinfo, int ntracks, 
     assert(generator != nullptr && "Unsupported pdg type");
 
     Track &track = generator->NextTrack();
-    track.rngState.SetSeed(314159265 * (event + i));
+    track.rngState.SetSeed(314159265 * (kMaxTracks * event + i + 1));
     track.energy       = trackinfo[i].energy;
     track.numIALeft[0] = -1.0;
     track.numIALeft[1] = -1.0;
@@ -231,13 +236,19 @@ void AdeptIntegration::InitializeGPU(const vecgeom::cxx::VPlacedVolume *world, i
   assert(world_dev && "VecGeom geometry upload to GPU failed");
 
   // Initialize physics
-  gpuState.hepem_state = InitG4HepEm();
+  gpuState[0].hepem_state = InitG4HepEm();
+
+  // Initialize field
+  auto field = (G4UniformMagField*)G4TransportationManager::GetTransportationManager()->GetFieldManager()->GetDetectorField();
+  auto field_vect = field->GetConstantFieldValue();
+  double bz = field_vect[2];
+  COPCORE_CUDA_CHECK(cudaMemcpyToSymbol(BzFieldValue, &bz, sizeof(double)));
 
   // Transfer MC indices.
-  COPCORE_CUDA_CHECK(cudaMalloc(&fUserData.MCIndex_dev, sizeof(int) * NumVolumes));
-  COPCORE_CUDA_CHECK(cudaMemcpy(fUserData.MCIndex_dev, fUserData.MCIndex, sizeof(int) * NumVolumes, cudaMemcpyHostToDevice));
-  COPCORE_CUDA_CHECK(cudaMemcpyToSymbol(MCIndex, &fUserData.MCIndex_dev, sizeof(int *)));
-
+  COPCORE_CUDA_CHECK(cudaMalloc(&fUserData[0].MCIndex_dev, sizeof(int) * NumVolumes));
+  COPCORE_CUDA_CHECK(cudaMemcpy(fUserData[0].MCIndex_dev, fUserData[0].MCIndex, sizeof(int) * NumVolumes, cudaMemcpyHostToDevice));
+  COPCORE_CUDA_CHECK(cudaMemcpyToSymbol(MCIndex, &fUserData[0].MCIndex_dev, sizeof(int *)));
+ 
   // Capacity of the different containers aka the maximum number of particles.
   constexpr int Capacity = 256 * 1024;
   std::cout << "INFO: batching " << max_batch << " particles for transport on the GPU" << std::endl;
@@ -250,108 +261,116 @@ void AdeptIntegration::InitializeGPU(const vecgeom::cxx::VPlacedVolume *world, i
   constexpr size_t TracksSize  = sizeof(Track) * Capacity;
   constexpr size_t ManagerSize = sizeof(SlotManager);
   const size_t QueueSize       = adept::MParray::SizeOfInstance(Capacity);
+  for (int tid = 0; tid < fNthreads; ++tid) {
+    // Create a stream to synchronize kernels of all particle types.
+    COPCORE_CUDA_CHECK(cudaStreamCreate(&gpuState[tid].stream));
+    if (tid > 0) {
+      fUserData[tid].MCIndex_dev = fUserData[0].MCIndex_dev;
+      gpuState[tid].hepem_state = gpuState[0].hepem_state;
+    }
+    for (int i = 0; i < ParticleType::NumParticleTypes; i++) {
+      // Share hepem state between threads
+      COPCORE_CUDA_CHECK(cudaMalloc(&gpuState[tid].particles[i].tracks, TracksSize));
 
-  for (int i = 0; i < ParticleType::NumParticleTypes; i++) {
-    COPCORE_CUDA_CHECK(cudaMalloc(&gpuState.particles[i].tracks, TracksSize));
+      COPCORE_CUDA_CHECK(cudaMalloc(&gpuState[tid].particles[i].slotManager, ManagerSize));
 
-    COPCORE_CUDA_CHECK(cudaMalloc(&gpuState.particles[i].slotManager, ManagerSize));
+      COPCORE_CUDA_CHECK(cudaMalloc(&gpuState[tid].particles[i].queues.currentlyActive, QueueSize));
+      COPCORE_CUDA_CHECK(cudaMalloc(&gpuState[tid].particles[i].queues.nextActive, QueueSize));
+      COPCORE_CUDA_CHECK(cudaMalloc(&gpuState[tid].particles[i].queues.relocate, QueueSize));
+      InitParticleQueues<<<1, 1>>>(gpuState[tid].particles[i].queues, Capacity);
 
-    COPCORE_CUDA_CHECK(cudaMalloc(&gpuState.particles[i].queues.currentlyActive, QueueSize));
-    COPCORE_CUDA_CHECK(cudaMalloc(&gpuState.particles[i].queues.nextActive, QueueSize));
-    COPCORE_CUDA_CHECK(cudaMalloc(&gpuState.particles[i].queues.relocate, QueueSize));
-    InitParticleQueues<<<1, 1>>>(gpuState.particles[i].queues, Capacity);
-
-    COPCORE_CUDA_CHECK(cudaStreamCreate(&gpuState.particles[i].stream));
-    COPCORE_CUDA_CHECK(cudaEventCreate(&gpuState.particles[i].event));
+      COPCORE_CUDA_CHECK(cudaStreamCreate(&gpuState[tid].particles[i].stream));
+      COPCORE_CUDA_CHECK(cudaEventCreate(&gpuState[tid].particles[i].event));
+    }
   }
   COPCORE_CUDA_CHECK(cudaDeviceSynchronize());
 
-  // Create a stream to synchronize kernels of all particle types.
-  COPCORE_CUDA_CHECK(cudaStreamCreate(&gpuState.stream));
+  for (int tid = 0; tid < fNthreads; ++tid) {
+    // Allocate memory to score charged track length and energy deposit per volume.
+    COPCORE_CUDA_CHECK(cudaMalloc(&fUserData[tid].chargedTrackLength_dev, sizeof(double) * NumVolumes));
+    COPCORE_CUDA_CHECK(cudaMemset(fUserData[tid].chargedTrackLength_dev, 0, sizeof(double) * NumVolumes));
+    COPCORE_CUDA_CHECK(cudaMalloc(&fUserData[tid].energyDeposit_dev, sizeof(double) * NumVolumes));
+    COPCORE_CUDA_CHECK(cudaMemset(fUserData[tid].energyDeposit_dev, 0, sizeof(double) * NumVolumes));
 
-  // Allocate memory to score charged track length and energy deposit per volume.
-  COPCORE_CUDA_CHECK(cudaMalloc(&fUserData.chargedTrackLength_dev, sizeof(double) * NumVolumes));
-  COPCORE_CUDA_CHECK(cudaMemset(fUserData.chargedTrackLength_dev, 0, sizeof(double) * NumVolumes));
-  COPCORE_CUDA_CHECK(cudaMalloc(&fUserData.energyDeposit_dev, sizeof(double) * NumVolumes));
-  COPCORE_CUDA_CHECK(cudaMemset(fUserData.energyDeposit_dev, 0, sizeof(double) * NumVolumes));
-
-  // Allocate and initialize scoring and statistics.
-  COPCORE_CUDA_CHECK(cudaMalloc(&fUserData.globalScoring_dev, sizeof(GlobalScoring)));
-  COPCORE_CUDA_CHECK(cudaMemset(fUserData.globalScoring_dev, 0, sizeof(GlobalScoring)));
+    // Allocate and initialize scoring and statistics.
+    COPCORE_CUDA_CHECK(cudaMalloc(&fUserData[tid].globalScoring_dev, sizeof(GlobalScoring)));
+    COPCORE_CUDA_CHECK(cudaMemset(fUserData[tid].globalScoring_dev, 0, sizeof(GlobalScoring)));
 
   
-  ScoringPerVolume scoringPerVolume_devPtrs;
-  scoringPerVolume_devPtrs.chargedTrackLength = fUserData.chargedTrackLength_dev;
-  scoringPerVolume_devPtrs.energyDeposit      = fUserData.energyDeposit_dev;
-  COPCORE_CUDA_CHECK(cudaMalloc(&fUserData.scoringPerVolume_dev, sizeof(ScoringPerVolume)));
-  COPCORE_CUDA_CHECK(
-      cudaMemcpy(fUserData.scoringPerVolume_dev, &scoringPerVolume_devPtrs, sizeof(ScoringPerVolume), cudaMemcpyHostToDevice));
+    ScoringPerVolume scoringPerVolume_devPtrs;
+    scoringPerVolume_devPtrs.chargedTrackLength = fUserData[tid].chargedTrackLength_dev;
+    scoringPerVolume_devPtrs.energyDeposit      = fUserData[tid].energyDeposit_dev;
+    COPCORE_CUDA_CHECK(cudaMalloc(&fUserData[tid].scoringPerVolume_dev, sizeof(ScoringPerVolume)));
+    COPCORE_CUDA_CHECK(
+        cudaMemcpy(fUserData[tid].scoringPerVolume_dev, &scoringPerVolume_devPtrs, sizeof(ScoringPerVolume), cudaMemcpyHostToDevice));
 
 
-  // initialize statistics
-  COPCORE_CUDA_CHECK(cudaMalloc(&gpuState.stats_dev, sizeof(Stats)));
-  COPCORE_CUDA_CHECK(cudaMallocHost(&gpuState.stats, sizeof(Stats)));
+    // initialize statistics
+    COPCORE_CUDA_CHECK(cudaMalloc(&gpuState[tid].stats_dev, sizeof(Stats)));
+    COPCORE_CUDA_CHECK(cudaMallocHost(&gpuState[tid].stats, sizeof(Stats)));
 
-  // initialize buffer of tracks on device
-  COPCORE_CUDA_CHECK(cudaMalloc(&gpuState.toDevice_dev, max_batch * sizeof(TrackData)));
-    
+    // initialize buffer of tracks on device
+    COPCORE_CUDA_CHECK(cudaMalloc(&gpuState[tid].toDevice_dev, max_batch * sizeof(TrackData)));
+  }
 }
 
 void AdeptIntegration::FreeGPU()
 {
   // Free resources.
-  COPCORE_CUDA_CHECK(cudaFree(fUserData.MCIndex_dev));
-  COPCORE_CUDA_CHECK(cudaFree(fUserData.chargedTrackLength_dev));
-  COPCORE_CUDA_CHECK(cudaFree(fUserData.energyDeposit_dev));
+  for (int tid = 0; tid < fNthreads; ++tid) {
+    COPCORE_CUDA_CHECK(cudaFree(fUserData[tid].MCIndex_dev));
+    COPCORE_CUDA_CHECK(cudaFree(fUserData[tid].chargedTrackLength_dev));
+    COPCORE_CUDA_CHECK(cudaFree(fUserData[tid].energyDeposit_dev));
 
-  COPCORE_CUDA_CHECK(cudaFree(fUserData.globalScoring_dev));
-  COPCORE_CUDA_CHECK(cudaFree(fUserData.scoringPerVolume_dev));
-  COPCORE_CUDA_CHECK(cudaFree(gpuState.stats_dev));
-  COPCORE_CUDA_CHECK(cudaFreeHost(gpuState.stats));
-  COPCORE_CUDA_CHECK(cudaFree(gpuState.toDevice_dev));
+    COPCORE_CUDA_CHECK(cudaFree(fUserData[tid].globalScoring_dev));
+    COPCORE_CUDA_CHECK(cudaFree(fUserData[tid].scoringPerVolume_dev));
+    COPCORE_CUDA_CHECK(cudaFree(gpuState[tid].stats_dev));
+    COPCORE_CUDA_CHECK(cudaFreeHost(gpuState[tid].stats));
+    COPCORE_CUDA_CHECK(cudaFree(gpuState[tid].toDevice_dev));
 
-  COPCORE_CUDA_CHECK(cudaStreamDestroy(gpuState.stream));
+    COPCORE_CUDA_CHECK(cudaStreamDestroy(gpuState[tid].stream));
 
-  for (int i = 0; i < ParticleType::NumParticleTypes; i++) {
-    COPCORE_CUDA_CHECK(cudaFree(gpuState.particles[i].tracks));
-    COPCORE_CUDA_CHECK(cudaFree(gpuState.particles[i].slotManager));
+    for (int i = 0; i < ParticleType::NumParticleTypes; i++) {
+      COPCORE_CUDA_CHECK(cudaFree(gpuState[tid].particles[i].tracks));
+      COPCORE_CUDA_CHECK(cudaFree(gpuState[tid].particles[i].slotManager));
 
-    COPCORE_CUDA_CHECK(cudaFree(gpuState.particles[i].queues.currentlyActive));
-    COPCORE_CUDA_CHECK(cudaFree(gpuState.particles[i].queues.nextActive));
-    COPCORE_CUDA_CHECK(cudaFree(gpuState.particles[i].queues.relocate));
+      COPCORE_CUDA_CHECK(cudaFree(gpuState[tid].particles[i].queues.currentlyActive));
+      COPCORE_CUDA_CHECK(cudaFree(gpuState[tid].particles[i].queues.nextActive));
+      COPCORE_CUDA_CHECK(cudaFree(gpuState[tid].particles[i].queues.relocate));
 
-    COPCORE_CUDA_CHECK(cudaStreamDestroy(gpuState.particles[i].stream));
-    COPCORE_CUDA_CHECK(cudaEventDestroy(gpuState.particles[i].event));
+      COPCORE_CUDA_CHECK(cudaStreamDestroy(gpuState[tid].particles[i].stream));
+      COPCORE_CUDA_CHECK(cudaEventDestroy(gpuState[tid].particles[i].event));
+    }
   }
 
-  FreeG4HepEm(gpuState.hepem_state);
+  FreeG4HepEm(gpuState[0].hepem_state);
 }
 
 
-void AdeptIntegration::ShowerGPU(int event, TrackBuffer const &buffer)
+void AdeptIntegration::ShowerGPU(int event, int tid, TrackBuffer const &buffer)
 {
   // Capacity of the different containers aka the maximum number of particles.
   constexpr int Capacity = 256 * 1024;
   auto &cudaManager = vecgeom::cxx::CudaManager::Instance();
   const vecgeom::cuda::VPlacedVolume *world_dev = cudaManager.world_gpu();
 
-  ParticleType &electrons = gpuState.particles[ParticleType::Electron];
-  ParticleType &positrons = gpuState.particles[ParticleType::Positron];
-  ParticleType &gammas    = gpuState.particles[ParticleType::Gamma];
+  ParticleType &electrons = gpuState[tid].particles[ParticleType::Electron];
+  ParticleType &positrons = gpuState[tid].particles[ParticleType::Positron];
+  ParticleType &gammas    = gpuState[tid].particles[ParticleType::Gamma];
 
   vecgeom::Stopwatch timer;
   timer.Start();
 
   // copy buffer of tracks to device
-  COPCORE_CUDA_CHECK(cudaMemcpy(gpuState.toDevice_dev, buffer.toDevice.data(), buffer.toDevice.size() * sizeof(TrackData), cudaMemcpyHostToDevice));
+  COPCORE_CUDA_CHECK(cudaMemcpy(gpuState[tid].toDevice_dev, buffer.toDevice.data(), buffer.toDevice.size() * sizeof(TrackData), cudaMemcpyHostToDevice));
 
   // initialize slot manager
   SlotManager slotManagerInit(Capacity);
   for (int i = 0; i < ParticleType::NumParticleTypes; i++) {
-    COPCORE_CUDA_CHECK(cudaMemcpy(gpuState.particles[i].slotManager, &slotManagerInit, sizeof(SlotManager), cudaMemcpyHostToDevice));
+    COPCORE_CUDA_CHECK(cudaMemcpy(gpuState[tid].particles[i].slotManager, &slotManagerInit, sizeof(SlotManager), cudaMemcpyHostToDevice));
   }
 
-  std::cout << std::endl << "GPU transporting event " << event << "..." << std::flush;
+  std::cout << std::endl << "GPU transporting event " << event << " for CPU thread " << tid << " ..." << std::flush;
 
   // Initialize AdePT tracks using the track buffer copied from CPU
   constexpr int initThreads = 32;
@@ -362,14 +381,14 @@ void AdeptIntegration::ShowerGPU(int event, TrackBuffer const &buffer)
     .gammas    = {gammas.tracks, gammas.slotManager, gammas.queues.nextActive},
   };
 
-  InitTracks<<<initBlocks, initThreads>>>(gpuState.toDevice_dev, buffer.toDevice.size(), event, secondaries,
-                                          world_dev, fUserData.globalScoring_dev);
+  InitTracks<<<initBlocks, initThreads>>>(gpuState[tid].toDevice_dev, buffer.toDevice.size(), event, secondaries,
+                                          world_dev, fUserData[tid].globalScoring_dev);
 
   COPCORE_CUDA_CHECK(cudaDeviceSynchronize());
 
-  gpuState.stats->inFlight[ParticleType::Electron] = fBuffer.nelectrons;
-  gpuState.stats->inFlight[ParticleType::Positron] = fBuffer.npositrons;
-  gpuState.stats->inFlight[ParticleType::Gamma]    = fBuffer.ngammas;
+  gpuState[tid].stats->inFlight[ParticleType::Electron] = fBuffer[tid].nelectrons;
+  gpuState[tid].stats->inFlight[ParticleType::Positron] = fBuffer[tid].npositrons;
+  gpuState[tid].stats->inFlight[ParticleType::Gamma]    = fBuffer[tid].ngammas;
 
   constexpr int MaxBlocks        = 1024;
   constexpr int TransportThreads = 32;
@@ -382,7 +401,7 @@ void AdeptIntegration::ShowerGPU(int event, TrackBuffer const &buffer)
   do {
 
     // *** ELECTRONS ***
-    int numElectrons = gpuState.stats->inFlight[ParticleType::Electron];
+    int numElectrons = gpuState[tid].stats->inFlight[ParticleType::Electron];
     if (numElectrons > 0) {
       transportBlocks = (numElectrons + TransportThreads - 1) / TransportThreads;
       transportBlocks = std::min(transportBlocks, MaxBlocks);
@@ -391,17 +410,17 @@ void AdeptIntegration::ShowerGPU(int event, TrackBuffer const &buffer)
 
       TransportElectrons<<<transportBlocks, TransportThreads, 0, electrons.stream>>>(
           electrons.tracks, electrons.queues.currentlyActive, secondaries, electrons.queues.nextActive,
-          electrons.queues.relocate, fUserData.globalScoring_dev, fUserData.scoringPerVolume_dev);
+          electrons.queues.relocate, fUserData[tid].globalScoring_dev, fUserData[tid].scoringPerVolume_dev);
 
       RelocateToNextVolume<<<relocateBlocks, RelocateThreads, 0, electrons.stream>>>(electrons.tracks,
                                                                                        electrons.queues.relocate);
 
       COPCORE_CUDA_CHECK(cudaEventRecord(electrons.event, electrons.stream));
-      COPCORE_CUDA_CHECK(cudaStreamWaitEvent(gpuState.stream, electrons.event, 0));
+      COPCORE_CUDA_CHECK(cudaStreamWaitEvent(gpuState[tid].stream, electrons.event, 0));
     }
 
     // *** POSITRONS ***
-    int numPositrons = gpuState.stats->inFlight[ParticleType::Positron];
+    int numPositrons = gpuState[tid].stats->inFlight[ParticleType::Positron];
     if (numPositrons > 0) {
       transportBlocks = (numPositrons + TransportThreads - 1) / TransportThreads;
       transportBlocks = std::min(transportBlocks, MaxBlocks);
@@ -410,17 +429,17 @@ void AdeptIntegration::ShowerGPU(int event, TrackBuffer const &buffer)
 
       TransportPositrons<<<transportBlocks, TransportThreads, 0, positrons.stream>>>(
           positrons.tracks, positrons.queues.currentlyActive, secondaries, positrons.queues.nextActive,
-          positrons.queues.relocate, fUserData.globalScoring_dev, fUserData.scoringPerVolume_dev);
+          positrons.queues.relocate, fUserData[tid].globalScoring_dev, fUserData[tid].scoringPerVolume_dev);
 
       RelocateToNextVolume<<<relocateBlocks, RelocateThreads, 0, positrons.stream>>>(positrons.tracks,
                                                                                      positrons.queues.relocate);
 
       COPCORE_CUDA_CHECK(cudaEventRecord(positrons.event, positrons.stream));
-      COPCORE_CUDA_CHECK(cudaStreamWaitEvent(gpuState.stream, positrons.event, 0));
+      COPCORE_CUDA_CHECK(cudaStreamWaitEvent(gpuState[tid].stream, positrons.event, 0));
     }
 
     // *** GAMMAS ***
-    int numGammas = gpuState.stats->inFlight[ParticleType::Gamma];
+    int numGammas = gpuState[tid].stats->inFlight[ParticleType::Gamma];
     if (numGammas > 0) {
       transportBlocks = (numGammas + TransportThreads - 1) / TransportThreads;
       transportBlocks = std::min(transportBlocks, MaxBlocks);
@@ -429,13 +448,13 @@ void AdeptIntegration::ShowerGPU(int event, TrackBuffer const &buffer)
 
       TransportGammas<<<transportBlocks, TransportThreads, 0, gammas.stream>>>(
           gammas.tracks, gammas.queues.currentlyActive, secondaries, gammas.queues.nextActive, gammas.queues.relocate,
-          fUserData.globalScoring_dev, fUserData.scoringPerVolume_dev);
+          fUserData[tid].globalScoring_dev, fUserData[tid].scoringPerVolume_dev);
 
       RelocateToNextVolume<<<relocateBlocks, RelocateThreads, 0, gammas.stream>>>(gammas.tracks,
                                                                                   gammas.queues.relocate);
 
       COPCORE_CUDA_CHECK(cudaEventRecord(gammas.event, gammas.stream));
-      COPCORE_CUDA_CHECK(cudaStreamWaitEvent(gpuState.stream, gammas.event, 0));
+      COPCORE_CUDA_CHECK(cudaStreamWaitEvent(gpuState[tid].stream, gammas.event, 0));
     }
 
     // *** END OF TRANSPORT ***
@@ -443,16 +462,16 @@ void AdeptIntegration::ShowerGPU(int event, TrackBuffer const &buffer)
     // The events ensure synchronization before finishing this iteration and
     // copying the Stats back to the host.
     AllParticleQueues queues = {{electrons.queues, positrons.queues, gammas.queues}};
-    FinishIteration<<<1, 1, 0, gpuState.stream>>>(queues, gpuState.stats_dev);
-    COPCORE_CUDA_CHECK(cudaMemcpyAsync(gpuState.stats, gpuState.stats_dev, sizeof(Stats), cudaMemcpyDeviceToHost, gpuState.stream));
+    FinishIteration<<<1, 1, 0, gpuState[tid].stream>>>(queues, gpuState[tid].stats_dev);
+    COPCORE_CUDA_CHECK(cudaMemcpyAsync(gpuState[tid].stats, gpuState[tid].stats_dev, sizeof(Stats), cudaMemcpyDeviceToHost, gpuState[tid].stream));
 
     // Finally synchronize all kernels.
-    COPCORE_CUDA_CHECK(cudaStreamSynchronize(gpuState.stream));
+    COPCORE_CUDA_CHECK(cudaStreamSynchronize(gpuState[tid].stream));
 
     // Count the number of particles in flight.
     inFlight = 0;
     for (int i = 0; i < ParticleType::NumParticleTypes; i++) {
-      inFlight += gpuState.stats->inFlight[i];
+      inFlight += gpuState[tid].stats->inFlight[i];
     }
 
     // Swap the queues for the next iteration.
@@ -474,20 +493,20 @@ void AdeptIntegration::ShowerGPU(int event, TrackBuffer const &buffer)
     constexpr int DepositThreads = 32;
 
     for (int i = 0; i < ParticleType::NumParticleTypes; i++) {
-      ParticleType &pType   = gpuState.particles[i];
-      int inFlightParticles = gpuState.stats->inFlight[i];
+      ParticleType &pType   = gpuState[tid].particles[i];
+      int inFlightParticles = gpuState[tid].stats->inFlight[i];
       if (inFlightParticles == 0) {
         continue;
       }
 
       int depositBlocks = (inFlightParticles + DepositThreads - 1) / DepositThreads;
       depositBlocks     = std::min(depositBlocks, MaxBlocks);
-      DepositEnergy<<<depositBlocks, DepositThreads, 0, gpuState.stream>>>(pType.tracks, pType.queues.currentlyActive,
-                                                                  fUserData.globalScoring_dev, fUserData.scoringPerVolume_dev);
+      DepositEnergy<<<depositBlocks, DepositThreads, 0, gpuState[tid].stream>>>(pType.tracks, pType.queues.currentlyActive,
+                                                                  fUserData[tid].globalScoring_dev, fUserData[tid].scoringPerVolume_dev);
 
-      ClearQueue<<<1, 1, 0, gpuState.stream>>>(pType.queues.currentlyActive);
+      ClearQueue<<<1, 1, 0, gpuState[tid].stream>>>(pType.queues.currentlyActive);
     }
-    COPCORE_CUDA_CHECK(cudaStreamSynchronize(gpuState.stream));
+    COPCORE_CUDA_CHECK(cudaStreamSynchronize(gpuState[tid].stream));
     std::cout << " ... ";
   }
 
@@ -497,13 +516,12 @@ void AdeptIntegration::ShowerGPU(int event, TrackBuffer const &buffer)
   std::cout << "Run time: " << time << "\n";
 
   // Transfer back scoring.
-  COPCORE_CUDA_CHECK(cudaMemcpy(&fUserData.globalScoring, fUserData.globalScoring_dev, sizeof(GlobalScoring), cudaMemcpyDeviceToHost));
+  COPCORE_CUDA_CHECK(cudaMemcpy(&fUserData[tid].globalScoring, fUserData[tid].globalScoring_dev, sizeof(GlobalScoring), cudaMemcpyDeviceToHost));
 
   // Transfer back the scoring per volume (charged track length and energy deposit).
-  COPCORE_CUDA_CHECK(cudaMemcpy(fUserData.scoringPerVolume.chargedTrackLength, fUserData.chargedTrackLength_dev,
+  COPCORE_CUDA_CHECK(cudaMemcpy(fUserData[tid].scoringPerVolume.chargedTrackLength, fUserData[tid].chargedTrackLength_dev,
                                   sizeof(double) * NumVolumes, cudaMemcpyDeviceToHost));
-  COPCORE_CUDA_CHECK(cudaMemcpy(fUserData.scoringPerVolume.energyDeposit, fUserData.energyDeposit_dev,
+  COPCORE_CUDA_CHECK(cudaMemcpy(fUserData[tid].scoringPerVolume.energyDeposit, fUserData[tid].energyDeposit_dev,
                                   sizeof(double) * NumVolumes, cudaMemcpyDeviceToHost));
-  
-
+  fUserData[tid].globalScoring.Print();
 }

@@ -6,7 +6,7 @@
 ## =============================================================================
 ##
 ##/control/verbose 0
-##/run/numberOfThreads 4
+/run/numberOfThreads 4
 ##/run/verbose 0
 ##
 ## -----------------------------------------------------------------------------
@@ -22,14 +22,11 @@
 /Par04/detector/setAbsor 2 G4_lAr 5.7 mm
 /Par04/detector/print
 
-# initialize
-/run/initialize
-
 ## -----------------------------------------------------------------------------
 ## Optionally, set a constant magnetic filed:
 ##   = set a constant, 2 Tesla field perpendicular to the [1,0,0] beam direction
 ## -----------------------------------------------------------------------------
-##/Par04/detector/setField 0 0 2.0 tesla
+/Par04/detector/setField 0 0 2.0 tesla
 ##
 ## -----------------------------------------------------------------------------
 ## Set the physics list (more exactly, the EM physics constructor):
@@ -44,15 +41,20 @@
 ## Set secondary production threshold, init. the run and set primary properties
 ## -----------------------------------------------------------------------------
 /run/setCut 0.7 mm
+/run/initialize
+
+/Par04/gun/setDefault
 /gun/particle e-
 /gun/energy 10 GeV
-/gun/position 0 0 0
+##/gun/position 0 0 0
+/Par04/gun/print
+
 ##
 ## -----------------------------------------------------------------------------
 ## Run the simulation with the given number of events and print list of processes
 ## -----------------------------------------------------------------------------
 ##/tracking/verbose 1
-/process/list
+##/process/list
 
 # run 100 events with parametrised simulation
 # by default all created models are active
@@ -71,6 +73,6 @@
 #/run/beamOn 100
 
 # run 100 events with full (detailed) simulation
-/param/InActivateModel model
-/analysis/setFileName Par04_fullsim_100events.root
-/run/beamOn 100
+###/param/InActivateModel model
+###/analysis/setFileName Par04_fullsim_100events.root
+###/run/beamOn 100

@@ -93,3 +93,11 @@ void Par04PrimaryGeneratorAction::SetDefaultKinematic()
   G4double position = -0.25 * (fDetector->GetWorldSizeX() + fDetector->GetCalorThickness());
   fParticleGun->SetParticlePosition(G4ThreeVector(position,0.*cm,0.*cm));
 }
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+void Par04PrimaryGeneratorAction::Print() const
+{
+  std::cout << "=== Gun shooting " << fParticleGun->GetParticleDefinition()->GetParticleName()
+            << " with energy " << fParticleGun->GetParticleEnergy() / GeV << "[GeV] from: "
+            << fParticleGun->GetParticlePosition() / mm << " [mm]\n";
+}

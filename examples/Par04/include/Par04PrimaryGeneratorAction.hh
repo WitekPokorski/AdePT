@@ -48,6 +48,7 @@ class Par04PrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
   Par04PrimaryGeneratorAction(Par04DetectorConstruction*);
   virtual ~Par04PrimaryGeneratorAction();
 
+  void Print() const;
   void SetDefaultKinematic();
   void SetRndmBeam(G4double val) { fRndmBeam = val;}
   virtual void GeneratePrimaries(G4Event*) final;
