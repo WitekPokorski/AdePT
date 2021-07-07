@@ -19,10 +19,10 @@ enum MaterialCutCouples {
 
 constexpr double ProductionCut = 0.7 * copcore::units::mm;
 
-constexpr double CalorSizeYZ       = 40 * copcore::units::cm;
-constexpr int NbOfLayers           = 50;
-constexpr int NbOfAbsorbers        = 2;
-constexpr int NumVolumes = 1 + 1 + NbOfLayers * (1 + NbOfAbsorbers);
+constexpr double CalorSizeYZ = 40 * copcore::units::cm;
+constexpr int NbOfLayers     = 50;
+constexpr int NbOfAbsorbers  = 2;
+constexpr int NumVolumes     = 1 + 1 + NbOfLayers * (1 + NbOfAbsorbers);
 
 constexpr double GapThickness      = 2.3 * copcore::units::mm;
 constexpr double AbsorberThickness = 5.7 * copcore::units::mm;
@@ -45,9 +45,10 @@ struct GlobalScoring {
   unsigned long long numElectrons;
   unsigned long long numPositrons;
 
-  void Print() {
-    printf("Global scoring: stpChg=%llu stpNeu=%llu hits=%llu numGam=%llu numEle=%llu numPos=%llu\n",
-      chargedSteps, neutralSteps, hits, numGammas, numElectrons, numPositrons);
+  void Print()
+  {
+    printf("Global scoring: stpChg=%llu stpNeu=%llu hits=%llu numGam=%llu numEle=%llu numPos=%llu\n", chargedSteps,
+           neutralSteps, hits, numGammas, numElectrons, numPositrons);
   }
 };
 
@@ -57,19 +58,20 @@ struct ScoringPerVolume {
 };
 
 struct UserData {
-  double *energyDeposit_dev {nullptr};
-  double *chargedTrackLength_dev {nullptr};
+  double *energyDeposit_dev{nullptr};
+  double *chargedTrackLength_dev{nullptr};
 
-  int    MCIndex[NumVolumes];
-  int   *MCIndex_dev {nullptr};
+  int MCIndex[NumVolumes];
+  int *MCIndex_dev{nullptr};
   double chargedTrackLength[NumVolumes];
   double energyDeposit[NumVolumes];
   ScoringPerVolume scoringPerVolume;
-  ScoringPerVolume *scoringPerVolume_dev {nullptr};
+  ScoringPerVolume *scoringPerVolume_dev{nullptr};
   GlobalScoring globalScoring;
-  GlobalScoring *globalScoring_dev {nullptr};
+  GlobalScoring *globalScoring_dev{nullptr};
 
-  UserData() {
+  UserData()
+  {
     // Map VecGeom volume IDs to Geant4 material-cuts couples.
     // Fill world and calorimeter.
     MCIndex[0] = MCIndex[1] = WorldMC;
@@ -81,7 +83,6 @@ struct UserData {
     scoringPerVolume.chargedTrackLength = chargedTrackLength;
     scoringPerVolume.energyDeposit      = energyDeposit;
   }
-
 };
 
 #endif

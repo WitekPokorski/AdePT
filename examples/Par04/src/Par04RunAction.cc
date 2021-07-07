@@ -32,23 +32,24 @@
 
 #include "g4analysis.hh"
 
-Par04RunAction::Par04RunAction(Par04DetectorConstruction* aDetector)
-  : G4UserRunAction()
-  , fDetector(aDetector)
+Par04RunAction::Par04RunAction(Par04DetectorConstruction *aDetector) : G4UserRunAction(), fDetector(aDetector)
 {
   // Create analysis manager
-  G4AnalysisManager* analysisManager = G4Analysis::ManagerInstance("root");
+  G4AnalysisManager *analysisManager = G4Analysis::ManagerInstance("root");
   // Default filename, can be overriden with /analysis/setFileName
   analysisManager->SetFileName("Par04Output");
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-Par04RunAction::~Par04RunAction() { delete G4AnalysisManager::Instance(); }
+Par04RunAction::~Par04RunAction()
+{
+  delete G4AnalysisManager::Instance();
+}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void Par04RunAction::BeginOfRunAction(const G4Run*)
+void Par04RunAction::BeginOfRunAction(const G4Run *)
 {
   /*
   // Get detector dimensions
@@ -115,7 +116,7 @@ void Par04RunAction::BeginOfRunAction(const G4Run*)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void Par04RunAction::EndOfRunAction(const G4Run*)
+void Par04RunAction::EndOfRunAction(const G4Run *)
 {
   AdeptIntegration::Instance().Cleanup();
   /*

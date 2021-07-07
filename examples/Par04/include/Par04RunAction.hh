@@ -41,22 +41,21 @@ class Par04DetectorConstruction;
  *
  */
 
-class Par04RunAction : public G4UserRunAction
-{
- public:
+class Par04RunAction : public G4UserRunAction {
+public:
   /// Constructor. Defines the histograms.
-  Par04RunAction(Par04DetectorConstruction* aDetector);
+  Par04RunAction(Par04DetectorConstruction *aDetector);
   virtual ~Par04RunAction();
 
   /// Open the file for the analysis
-  virtual void BeginOfRunAction(const G4Run*) final;
+  virtual void BeginOfRunAction(const G4Run *) final;
   /// Write and close the file
-  virtual void EndOfRunAction(const G4Run*) final;
+  virtual void EndOfRunAction(const G4Run *) final;
 
- private:
+private:
   /// Pointer to detector construction to retrieve the detector dimensions to
   /// setup the histograms
-  Par04DetectorConstruction* fDetector;
+  Par04DetectorConstruction *fDetector;
 };
 
 #endif /* PAR03RUNACTION_HH */

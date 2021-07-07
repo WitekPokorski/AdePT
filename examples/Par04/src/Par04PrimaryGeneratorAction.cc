@@ -36,21 +36,16 @@
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-Par04PrimaryGeneratorAction::Par04PrimaryGeneratorAction(Par04DetectorConstruction* det)
-:G4VUserPrimaryGeneratorAction(),
- fParticleGun(0),
- fDetector(det),   
- fRndmBeam(0.),  
- fGunMessenger(0)
+Par04PrimaryGeneratorAction::Par04PrimaryGeneratorAction(Par04DetectorConstruction *det)
+    : G4VUserPrimaryGeneratorAction(), fParticleGun(0), fDetector(det), fRndmBeam(0.), fGunMessenger(0)
 {
   G4int n_particle = 1;
-  fParticleGun  = new G4ParticleGun(n_particle);
+  fParticleGun     = new G4ParticleGun(n_particle);
   SetDefaultKinematic();
-  
-  //create a messenger for this class
+
+  // create a messenger for this class
   fGunMessenger = new Par04PrimaryGeneratorMessenger(this);
 }
-
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -62,44 +57,42 @@ Par04PrimaryGeneratorAction::~Par04PrimaryGeneratorAction()
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void Par04PrimaryGeneratorAction::GeneratePrimaries(G4Event* aEvent)
+void Par04PrimaryGeneratorAction::GeneratePrimaries(G4Event *aEvent)
 {
-  //this function is called at the begining of event
+  // this function is called at the begining of event
   //
-  //randomize the beam, if requested.
-  if (fRndmBeam > 0.) 
-    {
-      G4ThreeVector oldPosition = fParticleGun->GetParticlePosition();    
-      G4double rbeam = 0.5*(fDetector->GetCalorSizeYZ())*fRndmBeam;
-      G4double x0 = oldPosition.x();
-      G4double y0 = oldPosition.y() + (2*G4UniformRand()-1.)*rbeam;
-      G4double z0 = oldPosition.z() + (2*G4UniformRand()-1.)*rbeam;
-      fParticleGun->SetParticlePosition(G4ThreeVector(x0,y0,z0));
-      fParticleGun->GeneratePrimaryVertex(aEvent);
-      fParticleGun->SetParticlePosition(oldPosition);      
-    }
-  else  fParticleGun->GeneratePrimaryVertex(aEvent);
+  // randomize the beam, if requested.
+  if (fRndmBeam > 0.) {
+    G4ThreeVector oldPosition = fParticleGun->GetParticlePosition();
+    G4double rbeam            = 0.5 * (fDetector->GetCalorSizeYZ()) * fRndmBeam;
+    G4double x0               = oldPosition.x();
+    G4double y0               = oldPosition.y() + (2 * G4UniformRand() - 1.) * rbeam;
+    G4double z0               = oldPosition.z() + (2 * G4UniformRand() - 1.) * rbeam;
+    fParticleGun->SetParticlePosition(G4ThreeVector(x0, y0, z0));
+    fParticleGun->GeneratePrimaryVertex(aEvent);
+    fParticleGun->SetParticlePosition(oldPosition);
+  } else
+    fParticleGun->GeneratePrimaryVertex(aEvent);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void Par04PrimaryGeneratorAction::SetDefaultKinematic()
 {
-  G4ParticleTable* particleTable = G4ParticleTable::GetParticleTable();
+  G4ParticleTable *particleTable = G4ParticleTable::GetParticleTable();
   G4String particleName;
-  G4ParticleDefinition* particle
-                    = particleTable->FindParticle(particleName="e-");
+  G4ParticleDefinition *particle = particleTable->FindParticle(particleName = "e-");
   fParticleGun->SetParticleDefinition(particle);
-  fParticleGun->SetParticleMomentumDirection(G4ThreeVector(1.,0.,0.));
-  fParticleGun->SetParticleEnergy(1.*GeV);
+  fParticleGun->SetParticleMomentumDirection(G4ThreeVector(1., 0., 0.));
+  fParticleGun->SetParticleEnergy(1. * GeV);
   G4double position = -0.25 * (fDetector->GetWorldSizeX() + fDetector->GetCalorThickness());
-  fParticleGun->SetParticlePosition(G4ThreeVector(position,0.*cm,0.*cm));
+  fParticleGun->SetParticlePosition(G4ThreeVector(position, 0. * cm, 0. * cm));
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 void Par04PrimaryGeneratorAction::Print() const
 {
-  std::cout << "=== Gun shooting " << fParticleGun->GetParticleDefinition()->GetParticleName()
-            << " with energy " << fParticleGun->GetParticleEnergy() / GeV << "[GeV] from: "
-            << fParticleGun->GetParticlePosition() / mm << " [mm]\n";
+  std::cout << "=== Gun shooting " << fParticleGun->GetParticleDefinition()->GetParticleName() << " with energy "
+            << fParticleGun->GetParticleEnergy() / GeV << "[GeV] from: " << fParticleGun->GetParticlePosition() / mm
+            << " [mm]\n";
 }

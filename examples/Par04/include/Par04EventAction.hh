@@ -42,25 +42,24 @@ class Par04DetectorConstruction;
  *
  */
 
-class Par04EventAction : public G4UserEventAction
-{
- public:
-  Par04EventAction(Par04DetectorConstruction* aDetector);
+class Par04EventAction : public G4UserEventAction {
+public:
+  Par04EventAction(Par04DetectorConstruction *aDetector);
   virtual ~Par04EventAction();
 
   /// Timer is started
-  virtual void BeginOfEventAction(const G4Event* aEvent) final;
+  virtual void BeginOfEventAction(const G4Event *aEvent) final;
   /// Hits collection is retrieved, analysed, and histograms are filled.
-  virtual void EndOfEventAction(const G4Event* aEvent) final;
+  virtual void EndOfEventAction(const G4Event *aEvent) final;
 
- private:
+private:
   /// ID of a hit collection to analyse
   G4int fHitCollectionID;
   /// Timer measurement
   G4Timer fTimer;
   /// Pointer to detector construction to retrieve (once) the detector
   /// dimensions
-  Par04DetectorConstruction* fDetector;
+  Par04DetectorConstruction *fDetector;
   /// Size of cell along Z axis
   G4double fCellSizeZ = 0;
   /// Size of cell along radius of cylinder

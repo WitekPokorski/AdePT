@@ -35,13 +35,10 @@
 #include "G4UIcmdWithAString.hh"
 #include "G4UIcmdWith3VectorAndUnit.hh"
 
-
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-Par04DetectorMessenger::Par04DetectorMessenger(
-  Par04DetectorConstruction* aDetector)
-  : G4UImessenger()
-  , fDetector(aDetector)
+Par04DetectorMessenger::Par04DetectorMessenger(Par04DetectorConstruction *aDetector)
+    : G4UImessenger(), fDetector(aDetector)
 {
   fExampleDir = new G4UIdirectory("/Par04/");
   fExampleDir->SetGuidance("UI commands specific to this example");
@@ -51,63 +48,63 @@ Par04DetectorMessenger::Par04DetectorMessenger(
 
   fPrintCmd = new G4UIcmdWithoutParameter("/Par04/detector/print", this);
   fPrintCmd->SetGuidance("Print current settings.");
-  
-  fSizeYZCmd = new G4UIcmdWithADoubleAndUnit("/Par04/detector/setSizeYZ",this);
+
+  fSizeYZCmd = new G4UIcmdWithADoubleAndUnit("/Par04/detector/setSizeYZ", this);
   fSizeYZCmd->SetGuidance("Set tranverse size of the calorimeter");
-  fSizeYZCmd->SetParameterName("Size",false);
+  fSizeYZCmd->SetParameterName("Size", false);
   fSizeYZCmd->SetRange("Size>0.");
   fSizeYZCmd->SetUnitCategory("Length");
-  fSizeYZCmd->AvailableForStates(G4State_PreInit,G4State_Idle);
+  fSizeYZCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
   fSizeYZCmd->SetToBeBroadcasted(false);
-  //  
-  fNbLayersCmd = new G4UIcmdWithAnInteger("/Par04/detector/setNbOfLayers",this);
+  //
+  fNbLayersCmd = new G4UIcmdWithAnInteger("/Par04/detector/setNbOfLayers", this);
   fNbLayersCmd->SetGuidance("Set number of layers.");
-  fNbLayersCmd->SetParameterName("NbLayers",false);
+  fNbLayersCmd->SetParameterName("NbLayers", false);
   fNbLayersCmd->SetRange("NbLayers>0");
-  fNbLayersCmd->AvailableForStates(G4State_PreInit,G4State_Idle);
+  fNbLayersCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
   fNbLayersCmd->SetToBeBroadcasted(false);
-  // 
-  fNbAbsorCmd = new G4UIcmdWithAnInteger("/Par04/detector/setNbOfAbsor",this);
+  //
+  fNbAbsorCmd = new G4UIcmdWithAnInteger("/Par04/detector/setNbOfAbsor", this);
   fNbAbsorCmd->SetGuidance("Set number of Absorbers.");
-  fNbAbsorCmd->SetParameterName("NbAbsor",false);
+  fNbAbsorCmd->SetParameterName("NbAbsor", false);
   fNbAbsorCmd->SetRange("NbAbsor>0");
-  fNbAbsorCmd->AvailableForStates(G4State_PreInit,G4State_Idle);
+  fNbAbsorCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
   fNbAbsorCmd->SetToBeBroadcasted(false);
   //
-  fFieldCmd = new G4UIcmdWith3VectorAndUnit("/Par04/detector/setField",this);
+  fFieldCmd = new G4UIcmdWith3VectorAndUnit("/Par04/detector/setField", this);
   fFieldCmd->SetGuidance("Set the constant magenetic field vector.");
   fFieldCmd->SetUnitCategory("Magnetic flux density");
-  fFieldCmd->AvailableForStates(G4State_PreInit,G4State_Idle);
+  fFieldCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
   fFieldCmd->SetToBeBroadcasted(false);
-  // 
-  fAbsorCmd = new G4UIcommand("/Par04/detector/setAbsor",this);
+  //
+  fAbsorCmd = new G4UIcommand("/Par04/detector/setAbsor", this);
   fAbsorCmd->SetGuidance("Set the absor nb, the material, the thickness.");
   fAbsorCmd->SetGuidance("  absor number : from 1 to NbOfAbsor");
   fAbsorCmd->SetGuidance("  material name");
-  fAbsorCmd->SetGuidance("  thickness (with unit) : t>0."); 
+  fAbsorCmd->SetGuidance("  thickness (with unit) : t>0.");
   //
-  G4UIparameter* AbsNbPrm = new G4UIparameter("AbsorNb",'i',false);
+  G4UIparameter *AbsNbPrm = new G4UIparameter("AbsorNb", 'i', false);
   AbsNbPrm->SetGuidance("absor number : from 1 to NbOfAbsor");
   AbsNbPrm->SetParameterRange("AbsorNb>0");
   fAbsorCmd->SetParameter(AbsNbPrm);
   //
-  G4UIparameter* MatPrm = new G4UIparameter("material",'s',false);
+  G4UIparameter *MatPrm = new G4UIparameter("material", 's', false);
   MatPrm->SetGuidance("material name");
   fAbsorCmd->SetParameter(MatPrm);
-  //    
-  G4UIparameter* ThickPrm = new G4UIparameter("thickness",'d',false);
+  //
+  G4UIparameter *ThickPrm = new G4UIparameter("thickness", 'd', false);
   ThickPrm->SetGuidance("thickness of absorber");
   ThickPrm->SetParameterRange("thickness>0.");
   fAbsorCmd->SetParameter(ThickPrm);
   //
-  G4UIparameter* unitPrm = new G4UIparameter("unit",'s',false);
+  G4UIparameter *unitPrm = new G4UIparameter("unit", 's', false);
   unitPrm->SetGuidance("unit of thickness");
   G4String unitList = G4UIcommand::UnitsList(G4UIcommand::CategoryOf("mm"));
   unitPrm->SetParameterCandidates(unitList);
   fAbsorCmd->SetParameter(unitPrm);
   //
-  fAbsorCmd->AvailableForStates(G4State_PreInit,G4State_Idle);
-  fAbsorCmd->SetToBeBroadcasted(false);  
+  fAbsorCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+  fAbsorCmd->SetToBeBroadcasted(false);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -126,50 +123,38 @@ Par04DetectorMessenger::~Par04DetectorMessenger()
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void Par04DetectorMessenger::SetNewValue(G4UIcommand* aCommand,
-                                         G4String aNewValue)
+void Par04DetectorMessenger::SetNewValue(G4UIcommand *aCommand, G4String aNewValue)
 {
-  if(aCommand == fPrintCmd)
-  {
+  if (aCommand == fPrintCmd) {
     fDetector->Print();
-  }
-  else if(aCommand == fNbLayersCmd)
-  {
+  } else if (aCommand == fNbLayersCmd) {
     fDetector->SetNbOfLayers(fNbLayersCmd->GetNewIntValue(aNewValue));
-  }
-  else if(aCommand == fNbAbsorCmd)
-  {
+  } else if (aCommand == fNbAbsorCmd) {
     fDetector->SetNbOfAbsor(fNbAbsorCmd->GetNewIntValue(aNewValue));
-  }
-  else if(aCommand == fFieldCmd)
-  {
+  } else if (aCommand == fFieldCmd) {
     fDetector->SetMagField(fFieldCmd->GetNew3VectorValue(aNewValue));
-  } 
-  else if (aCommand == fAbsorCmd)
-  {
-    G4int num; G4double tick;
+  } else if (aCommand == fAbsorCmd) {
+    G4int num;
+    G4double tick;
     G4String unt, mat;
     std::istringstream is(aNewValue);
     is >> num >> mat >> tick >> unt;
-    G4String material=mat;
+    G4String material = mat;
     tick *= G4UIcommand::ValueOf(unt);
-    fDetector->SetAbsorMaterial (num,material);
-    fDetector->SetAbsorThickness(num,tick);
+    fDetector->SetAbsorMaterial(num, material);
+    fDetector->SetAbsorThickness(num, tick);
   }
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-G4String Par04DetectorMessenger::GetCurrentValue(G4UIcommand* aCommand)
+G4String Par04DetectorMessenger::GetCurrentValue(G4UIcommand *aCommand)
 {
   G4String cv;
 
-  if(aCommand == fNbLayersCmd)
-  {
+  if (aCommand == fNbLayersCmd) {
     cv = fNbLayersCmd->ConvertToString(fDetector->GetNbOfLayers());
-  }
-  else if(aCommand == fNbAbsorCmd)
-  {
+  } else if (aCommand == fNbAbsorCmd) {
     cv = fNbAbsorCmd->ConvertToString(fDetector->GetNbOfAbsor());
   }
   return cv;

@@ -35,12 +35,10 @@
 #include "G4Event.hh"
 #include "G4EventManager.hh"
 
-Par04EventAction::Par04EventAction(Par04DetectorConstruction* aDetector)
-  : G4UserEventAction()
-  , fHitCollectionID(-1)
-  , fTimer()
-  , fDetector(aDetector)
-{}
+Par04EventAction::Par04EventAction(Par04DetectorConstruction *aDetector)
+    : G4UserEventAction(), fHitCollectionID(-1), fTimer(), fDetector(aDetector)
+{
+}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -48,11 +46,14 @@ Par04EventAction::~Par04EventAction() {}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void Par04EventAction::BeginOfEventAction(const G4Event*) { fTimer.Start(); }
+void Par04EventAction::BeginOfEventAction(const G4Event *)
+{
+  fTimer.Start();
+}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void Par04EventAction::EndOfEventAction(const G4Event* aEvent)
+void Par04EventAction::EndOfEventAction(const G4Event *aEvent)
 {
   fTimer.Stop();
   /*

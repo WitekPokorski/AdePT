@@ -17,7 +17,6 @@
 #include <VecGeom/base/Vector3D.h>
 #include <VecGeom/navigation/NavStateIndex.h>
 
-
 // A data structure to represent a particle track. The particle type is implicit
 // by the queue and not stored in memory.
 struct Track {
@@ -48,7 +47,7 @@ struct Track {
 
     // A secondary inherits the position of its parent; the caller is responsible
     // to update the directions.
-    this->pos           = parent.pos;
+    this->pos          = parent.pos;
     this->currentState = parent.currentState;
     this->nextState    = parent.nextState;
   }
@@ -59,13 +58,11 @@ extern __constant__ __device__ int Zero;
 
 class RanluxppDoubleEngine : public G4HepEmRandomEngine {
   // Wrapper functions to call into RanluxppDouble.
-  static __host__ __device__ __attribute__((noinline))
-  double FlatWrapper(void *object)
+  static __host__ __device__ __attribute__((noinline)) double FlatWrapper(void *object)
   {
     return ((RanluxppDouble *)object)->Rndm();
   }
-  static __host__ __device__ __attribute__((noinline))
-  void FlatArrayWrapper(void *object, const int size, double *vect)
+  static __host__ __device__ __attribute__((noinline)) void FlatArrayWrapper(void *object, const int size, double *vect)
   {
     for (int i = 0; i < size; i++) {
       vect[i] = ((RanluxppDouble *)object)->Rndm();
@@ -114,7 +111,9 @@ class ParticleGenerator {
 
 public:
   __host__ __device__ ParticleGenerator(Track *tracks, SlotManager *slotManager, adept::MParray *activeQueue)
-    : fTracks(tracks), fSlotManager(slotManager), fActiveQueue(activeQueue) {}
+      : fTracks(tracks), fSlotManager(slotManager), fActiveQueue(activeQueue)
+  {
+  }
 
   __host__ __device__ Track &NextTrack()
   {
@@ -139,12 +138,12 @@ struct Secondaries {
 // Kernels in different TUs.
 __global__ void RelocateToNextVolume(Track *allTracks, const adept::MParray *relocateQueue);
 
-__global__ void TransportElectrons(
-    Track *electrons, const adept::MParray *active, Secondaries secondaries, adept::MParray *activeQueue,
-    adept::MParray *relocateQueue, GlobalScoring *globalScoring, ScoringPerVolume *scoringPerVolume);
-__global__ void TransportPositrons(
-    Track *positrons, const adept::MParray *active, Secondaries secondaries, adept::MParray *activeQueue,
-    adept::MParray *relocateQueue, GlobalScoring *globalScoring, ScoringPerVolume *scoringPerVolume);
+__global__ void TransportElectrons(Track *electrons, const adept::MParray *active, Secondaries secondaries,
+                                   adept::MParray *activeQueue, adept::MParray *relocateQueue,
+                                   GlobalScoring *globalScoring, ScoringPerVolume *scoringPerVolume);
+__global__ void TransportPositrons(Track *positrons, const adept::MParray *active, Secondaries secondaries,
+                                   adept::MParray *activeQueue, adept::MParray *relocateQueue,
+                                   GlobalScoring *globalScoring, ScoringPerVolume *scoringPerVolume);
 
 __global__ void TransportGammas(Track *gammas, const adept::MParray *active, Secondaries secondaries,
                                 adept::MParray *activeQueue, adept::MParray *relocateQueue,

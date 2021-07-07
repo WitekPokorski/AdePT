@@ -50,29 +50,25 @@ class G4TouchableHistory;
  *
  */
 
-class Par04SensitiveDetector
-  : public G4VSensitiveDetector
-  , public G4VFastSimSensitiveDetector
-{
- public:
+class Par04SensitiveDetector : public G4VSensitiveDetector, public G4VFastSimSensitiveDetector {
+public:
   Par04SensitiveDetector(G4String aName);
   Par04SensitiveDetector(G4String aName, G4int aNumLayers, G4int aNumAbsorbers);
   virtual ~Par04SensitiveDetector();
   /// Create hit collection
-  virtual void Initialize(G4HCofThisEvent* HCE) final;
+  virtual void Initialize(G4HCofThisEvent *HCE) final;
   /// Process energy deposit from the full simulation.
-  virtual G4bool ProcessHits(G4Step* aStep, G4TouchableHistory* aROhist) final;
+  virtual G4bool ProcessHits(G4Step *aStep, G4TouchableHistory *aROhist) final;
   /// Process energy deposit from the fast simulation.
-  virtual G4bool ProcessHits(const G4FastHit* aHit, const G4FastTrack* aTrack,
-                             G4TouchableHistory* aROhist) final;
+  virtual G4bool ProcessHits(const G4FastHit *aHit, const G4FastTrack *aTrack, G4TouchableHistory *aROhist) final;
   /// Process energy deposit - common part for full and fast simulation
   /// It is invoked from ProcessHits() methods, and sets basic hit properties
   /// (position, etc.), common for hit from fast and full simulation.
-  Par04Hit* RetrieveAndSetupHit(G4TouchableHistory* aTouchable);
+  Par04Hit *RetrieveAndSetupHit(G4TouchableHistory *aTouchable);
 
- private:
+private:
   /// Collection of hits
-  Par04HitsCollection* fHitsCollection = nullptr;
+  Par04HitsCollection *fHitsCollection = nullptr;
   /// ID of collection of hits
   G4int fHitCollectionID = -1;
   /// Number of layers

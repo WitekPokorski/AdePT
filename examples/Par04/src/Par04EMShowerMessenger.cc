@@ -34,21 +34,18 @@
 #include "G4UIcmdWithADouble.hh"
 #include "G4UIcmdWithAnInteger.hh"
 
-Par04EMShowerMessenger::Par04EMShowerMessenger(Par04EMShowerModel* aModel)
-  : fModel(aModel)
+Par04EMShowerMessenger::Par04EMShowerMessenger(Par04EMShowerModel *aModel) : fModel(aModel)
 {
   fDirectory = new G4UIdirectory("/Par04/fastSim/");
-  fDirectory->SetGuidance(
-    "Set mesh parameters for the example fast sim model.");
+  fDirectory->SetGuidance("Set mesh parameters for the example fast sim model.");
 
   fPrintCmd = new G4UIcmdWithoutParameter("/Par04/fastSim/print", this);
   fPrintCmd->SetGuidance("Print current settings.");
 
   fNbOfHitsCmd = new G4UIcmdWithAnInteger("/Par04/fastSim/numberOfHits", this);
-  fNbOfHitsCmd->SetGuidance(
-    "Set number of (same energy) energy deposits created in fast simulation. "
-    "Those deposits will be scored in the detector according to the readout of "
-    "the sensitive detector.");
+  fNbOfHitsCmd->SetGuidance("Set number of (same energy) energy deposits created in fast simulation. "
+                            "Those deposits will be scored in the detector according to the readout of "
+                            "the sensitive detector.");
   fNbOfHitsCmd->SetParameterName("Number", false);
 }
 
@@ -63,18 +60,16 @@ Par04EMShowerMessenger::~Par04EMShowerMessenger()
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void Par04EMShowerMessenger::SetNewValue(G4UIcommand* aCommand,
-                                         G4String aNewValues)
+void Par04EMShowerMessenger::SetNewValue(G4UIcommand *aCommand, G4String aNewValues)
 {
-  if(aCommand == fPrintCmd)
-  {
+  if (aCommand == fPrintCmd) {
     fModel->Print();
   }
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-G4String Par04EMShowerMessenger::GetCurrentValue(G4UIcommand* aCommand)
+G4String Par04EMShowerMessenger::GetCurrentValue(G4UIcommand *aCommand)
 {
   G4String cv;
 

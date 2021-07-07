@@ -68,8 +68,7 @@
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-Par04DetectorConstruction::Par04DetectorConstruction()
-  : G4VUserDetectorConstruction()
+Par04DetectorConstruction::Par04DetectorConstruction() : G4VUserDetectorConstruction()
 {
   fDetectorMessenger = new Par04DetectorMessenger(this);
 }
@@ -80,7 +79,7 @@ Par04DetectorConstruction::~Par04DetectorConstruction() {}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-G4VPhysicalVolume* Par04DetectorConstruction::Construct()
+G4VPhysicalVolume *Par04DetectorConstruction::Construct()
 {
   // Compute derived parameters of the calorimeter
   fLayerThickness = 0.;
@@ -155,11 +154,11 @@ G4VPhysicalVolume* Par04DetectorConstruction::Construct()
   //
   detectorRegion->SetProductionCuts(productionCuts);
   //
-  
+
   G4ProductionCutsTable *theCoupleTable = G4ProductionCutsTable::GetProductionCutsTable();
   theCoupleTable->UpdateCoupleTable(fPhysiWorld);
 
-  //Print();
+  // Print();
   CreateVecGeomWorld();
   return fPhysiWorld;
 }
@@ -183,16 +182,14 @@ void Par04DetectorConstruction::ConstructSDandField()
     G4cout << G4endl << " *** NO MAGNETIC FIELD SET  *** " << G4endl << G4endl;
   }
 
-  Par04SensitiveDetector* caloSD = new Par04SensitiveDetector(
-    "sensitiveDetector", fNbOfLayers, fNbOfAbsor);
+  Par04SensitiveDetector *caloSD = new Par04SensitiveDetector("sensitiveDetector", fNbOfLayers, fNbOfAbsor);
   G4SDManager::GetSDMpointer()->AddNewDetector(caloSD);
-  for (G4int k = 1; k <= fNbOfAbsor; k++) {  
+  for (G4int k = 1; k <= fNbOfAbsor; k++) {
     SetSensitiveDetector(fLogicAbsor[k], caloSD);
   }
 
-  auto detectorRegion =
-    G4RegionStore::GetInstance()->GetRegion("DetectorRegion");
-  Par04EMShowerModel* showermodel = new Par04EMShowerModel("model", detectorRegion);
+  auto detectorRegion             = G4RegionStore::GetInstance()->GetRegion("DetectorRegion");
+  Par04EMShowerModel *showermodel = new Par04EMShowerModel("model", detectorRegion);
   showermodel->Initialize();
 }
 
@@ -208,7 +205,7 @@ void Par04DetectorConstruction::Print() const
   }
   G4cout << "\n-------------------------------------------------------------\n";
 
-  //G4cout << "\n" << fDefaultMaterial << G4endl;
+  // G4cout << "\n" << fDefaultMaterial << G4endl;
   for (G4int j = 1; j <= fNbOfAbsor; j++)
     G4cout << "\n" << fAbsorMaterial[j] << G4endl;
 
@@ -282,7 +279,7 @@ void Par04DetectorConstruction::SetNbOfLayers(G4int ival)
     return;
   }
   fNbOfLayers = ival;
-  //G4RunManager::GetRunManager()->ReinitializeGeometry();
+  // G4RunManager::GetRunManager()->ReinitializeGeometry();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -297,7 +294,7 @@ void Par04DetectorConstruction::SetNbOfAbsor(G4int ival)
     return;
   }
   fNbOfAbsor = ival;
-  //G4RunManager::GetRunManager()->ReinitializeGeometry();
+  // G4RunManager::GetRunManager()->ReinitializeGeometry();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -314,7 +311,7 @@ void Par04DetectorConstruction::SetAbsorMaterial(G4int ival, const G4String &mat
 
   G4Material *pttoMaterial = G4NistManager::Instance()->FindOrBuildMaterial(material);
   if (pttoMaterial) fAbsorMaterial[ival] = pttoMaterial;
-  //G4RunManager::GetRunManager()->PhysicsHasBeenModified();
+  // G4RunManager::GetRunManager()->PhysicsHasBeenModified();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -333,7 +330,7 @@ void Par04DetectorConstruction::SetAbsorThickness(G4int ival, G4double val)
     return;
   }
   fAbsorThickness[ival] = val;
-  //G4RunManager::GetRunManager()->ReinitializeGeometry();
+  // G4RunManager::GetRunManager()->ReinitializeGeometry();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -347,5 +344,5 @@ void Par04DetectorConstruction::SetCalorSizeYZ(G4double val)
     return;
   }
   fCalorSizeYZ = val;
-  //G4RunManager::GetRunManager()->ReinitializeGeometry();
+  // G4RunManager::GetRunManager()->ReinitializeGeometry();
 }

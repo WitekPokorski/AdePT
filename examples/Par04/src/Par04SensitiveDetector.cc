@@ -34,17 +34,14 @@
 #include "G4Step.hh"
 #include "G4SDManager.hh"
 
-Par04SensitiveDetector::Par04SensitiveDetector(G4String aName)
-  : G4VSensitiveDetector(aName)
+Par04SensitiveDetector::Par04SensitiveDetector(G4String aName) : G4VSensitiveDetector(aName)
 {
   collectionName.insert("hits");
 }
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 Par04SensitiveDetector::Par04SensitiveDetector(G4String aName, G4int aNumLayers, G4int aNumAbsorbers)
-  : G4VSensitiveDetector(aName)
-  , fNumLayers(aNumLayers)
-  , fNumAbsorbers(aNumAbsorbers)
+    : G4VSensitiveDetector(aName), fNumLayers(aNumLayers), fNumAbsorbers(aNumAbsorbers)
 {
   collectionName.insert("hits");
 }
@@ -55,23 +52,18 @@ Par04SensitiveDetector::~Par04SensitiveDetector() {}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void Par04SensitiveDetector::Initialize(G4HCofThisEvent* aHCE)
+void Par04SensitiveDetector::Initialize(G4HCofThisEvent *aHCE)
 {
-  fHitsCollection =
-    new Par04HitsCollection(SensitiveDetectorName, collectionName[0]);
-  if(fHitCollectionID < 0)
-  {
-    fHitCollectionID =
-      G4SDManager::GetSDMpointer()->GetCollectionID(fHitsCollection);
+  fHitsCollection = new Par04HitsCollection(SensitiveDetectorName, collectionName[0]);
+  if (fHitCollectionID < 0) {
+    fHitCollectionID = G4SDManager::GetSDMpointer()->GetCollectionID(fHitsCollection);
   }
   aHCE->AddHitsCollection(fHitCollectionID, fHitsCollection);
 
   // fill calorimeter hits with zero energy deposition
-  for(G4int iz = 0; iz < fNumLayers; iz++)
-  {
-    for(G4int iz = 0; iz < fNumAbsorbers; iz++)
-    {
-      Par04Hit* hit = new Par04Hit();
+  for (G4int iz = 0; iz < fNumLayers; iz++) {
+    for (G4int iz = 0; iz < fNumAbsorbers; iz++) {
+      Par04Hit *hit = new Par04Hit();
       fHitsCollection->insert(hit);
     }
   }
@@ -79,14 +71,12 @@ void Par04SensitiveDetector::Initialize(G4HCofThisEvent* aHCE)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-G4bool Par04SensitiveDetector::ProcessHits(G4Step* aStep, G4TouchableHistory*)
+G4bool Par04SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
 {
   G4double edep = aStep->GetTotalEnergyDeposit();
-  if(edep == 0.)
-    return true;
+  if (edep == 0.) return true;
 
-  G4TouchableHistory* aTouchable =
-    (G4TouchableHistory*) (aStep->GetPreStepPoint()->GetTouchable());
+  G4TouchableHistory *aTouchable = (G4TouchableHistory *)(aStep->GetPreStepPoint()->GetTouchable());
 
   auto hit = RetrieveAndSetupHit(aTouchable);
 
@@ -95,27 +85,23 @@ G4bool Par04SensitiveDetector::ProcessHits(G4Step* aStep, G4TouchableHistory*)
 
   // Fill time information from G4Step
   // If it's already filled, choose hit with earliest global time
-  if(hit->GetTime() == -1 ||
-     hit->GetTime() > aStep->GetTrack()->GetGlobalTime())
+  if (hit->GetTime() == -1 || hit->GetTime() > aStep->GetTrack()->GetGlobalTime())
     hit->SetTime(aStep->GetTrack()->GetGlobalTime());
 
   // Set hit type to full simulation (only if hit is not already marked as fast
   // sim)
-  if(hit->GetType() != 1)
-    hit->SetType(0);
+  if (hit->GetType() != 1) hit->SetType(0);
 
   return true;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-G4bool Par04SensitiveDetector::ProcessHits(const G4FastHit* aHit,
-                                           const G4FastTrack* aTrack,
-                                           G4TouchableHistory* aTouchable)
+G4bool Par04SensitiveDetector::ProcessHits(const G4FastHit *aHit, const G4FastTrack *aTrack,
+                                           G4TouchableHistory *aTouchable)
 {
   G4double edep = aHit->GetEnergy();
-  if(edep == 0.)
-    return true;
+  if (edep == 0.) return true;
 
   auto hit = RetrieveAndSetupHit(aTouchable);
 
@@ -124,9 +110,7 @@ G4bool Par04SensitiveDetector::ProcessHits(const G4FastHit* aHit,
 
   // Fill time information from G4FastTrack
   // If it's already filled, choose hit with earliest global time
-  if(hit->GetTime() == -1 ||
-     hit->GetTime() > aTrack->GetPrimaryTrack()->GetGlobalTime())
-  {
+  if (hit->GetTime() == -1 || hit->GetTime() > aTrack->GetPrimaryTrack()->GetGlobalTime()) {
     hit->SetTime(aTrack->GetPrimaryTrack()->GetGlobalTime());
   }
 
@@ -139,26 +123,21 @@ G4bool Par04SensitiveDetector::ProcessHits(const G4FastHit* aHit,
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-Par04Hit* Par04SensitiveDetector::RetrieveAndSetupHit(
-  G4TouchableHistory* aTouchable)
+Par04Hit *Par04SensitiveDetector::RetrieveAndSetupHit(G4TouchableHistory *aTouchable)
 {
-  G4int layer   = aTouchable->GetCopyNumber(1);  // layer
-  G4int abso    = aTouchable->GetCopyNumber(0);  // absorber
+  G4int layer = aTouchable->GetCopyNumber(1); // layer
+  G4int abso  = aTouchable->GetCopyNumber(0); // absorber
 
   std::size_t hitID = 2 * layer + (abso - 1);
 
-  if(hitID >= fHitsCollection->entries())
-  {
-    G4Exception(
-      "Par04SensitiveDetector::RetrieveAndSetupHit()", "InvalidSetup",
-      FatalException,
-      "Size of hit collection in Par04SensitiveDetector is smaller than the "
-      "number of layers created in Par04DetectorConstruction!");
+  if (hitID >= fHitsCollection->entries()) {
+    G4Exception("Par04SensitiveDetector::RetrieveAndSetupHit()", "InvalidSetup", FatalException,
+                "Size of hit collection in Par04SensitiveDetector is smaller than the "
+                "number of layers created in Par04DetectorConstruction!");
   }
-  Par04Hit* hit = (*fHitsCollection)[hitID];
+  Par04Hit *hit = (*fHitsCollection)[hitID];
 
-  if(hit->GetZid() < 0)
-  {
+  if (hit->GetZid() < 0) {
     hit->SetZid(layer);
     hit->SetAbsoid(abso);
     hit->SetLogV(aTouchable->GetVolume(0)->GetLogicalVolume());

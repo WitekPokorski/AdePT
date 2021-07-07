@@ -46,19 +46,18 @@
 #include <VecGeom/base/Config.h>
 #include <VecGeom/management/GeoManager.h>
 
-Par04EMShowerModel::Par04EMShowerModel(G4String aModelName, G4Region* aEnvelope)
-  : G4VFastSimulationModel(aModelName, aEnvelope)
-  , fMessenger(new Par04EMShowerMessenger(this))
-  , fHitMaker(new G4FastSimHitMaker)
-{}
+Par04EMShowerModel::Par04EMShowerModel(G4String aModelName, G4Region *aEnvelope)
+    : G4VFastSimulationModel(aModelName, aEnvelope), fMessenger(new Par04EMShowerMessenger(this)),
+      fHitMaker(new G4FastSimHitMaker)
+{
+}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 Par04EMShowerModel::Par04EMShowerModel(G4String aModelName)
-  : G4VFastSimulationModel(aModelName)
-  , fMessenger(new Par04EMShowerMessenger(this))
-  , fHitMaker(new G4FastSimHitMaker)
-{}
+    : G4VFastSimulationModel(aModelName), fMessenger(new Par04EMShowerMessenger(this)), fHitMaker(new G4FastSimHitMaker)
+{
+}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -66,17 +65,15 @@ Par04EMShowerModel::~Par04EMShowerModel() {}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-G4bool Par04EMShowerModel::IsApplicable(
-  const G4ParticleDefinition& aParticleType)
+G4bool Par04EMShowerModel::IsApplicable(const G4ParticleDefinition &aParticleType)
 {
-  return &aParticleType == G4Electron::ElectronDefinition() ||
-         &aParticleType == G4Positron::PositronDefinition() ||
+  return &aParticleType == G4Electron::ElectronDefinition() || &aParticleType == G4Positron::PositronDefinition() ||
          &aParticleType == G4Gamma::GammaDefinition();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-G4bool Par04EMShowerModel::ModelTrigger(const G4FastTrack& aFastTrack)
+G4bool Par04EMShowerModel::ModelTrigger(const G4FastTrack &aFastTrack)
 {
   /*
   // Check energy
@@ -100,8 +97,7 @@ G4bool Par04EMShowerModel::ModelTrigger(const G4FastTrack& aFastTrack)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void Par04EMShowerModel::DoIt(const G4FastTrack& aFastTrack,
-                              G4FastStep& aFastStep)
+void Par04EMShowerModel::DoIt(const G4FastTrack &aFastTrack, G4FastStep &aFastStep)
 {
   // Remove particle from further processing by G4
   aFastStep.KillPrimaryTrack();
@@ -118,30 +114,30 @@ void Par04EMShowerModel::DoIt(const G4FastTrack& aFastTrack,
   int tid = G4Threading::G4GetThreadId();
   if (tid < 0) tid = 0;
 
-  std::cout << "Thread " << tid << " calling AdePT for particle " << pdg << " energy " << energy << " position " 
-  << particlePosition[0] << " " << particlePosition[1] << " " << particlePosition[2]
-  << " direction " <<  particleDirection[0] << " " << particleDirection[1] << " " << particleDirection[2] 
-  << std::endl;
+  std::cout << "Thread " << tid << " calling AdePT for particle " << pdg << " energy " << energy << " position "
+            << particlePosition[0] << " " << particlePosition[1] << " " << particlePosition[2] << " direction "
+            << particleDirection[0] << " " << particleDirection[1] << " " << particleDirection[2] << std::endl;
 
   AdeptIntegration::Instance().AddTrack(tid, pdg, energy, particlePosition[0], particlePosition[1], particlePosition[2],
                                         particleDirection[0], particleDirection[1], particleDirection[2]);
 
-
   // I need to pass the particle from Geant4 to AdePT and simulate the shower
   AdeptIntegration::Instance().Shower(G4EventManager::GetEventManager()->GetConstCurrentEvent()->GetEventID(), tid);
 
-// Create energy deposit in the detector
+  // Create energy deposit in the detector
 
+  for (auto id = 0; id != NumVolumes; id++) {
+    // std::cout << " ID " << id << " Charged-TrakL " <<
+    // AdeptIntegration::Instance().fUserData[tid].scoringPerVolume.chargedTrackLength[id] / copcore::units::mm
+    //          << " mm; Energy-Dep " << AdeptIntegration::Instance().fUserData[tid].scoringPerVolume.energyDeposit[id]
+    //          / copcore::units::MeV << " MeV" << std::endl;
+    fHitMaker->make(
+        G4FastHit(G4ThreeVector(id, 0, 0),
+                  AdeptIntegration::Instance().fUserData[tid].scoringPerVolume.energyDeposit[id] / copcore::units::MeV),
+        aFastTrack);
+  }
 
-for (auto id =0; id != NumVolumes; id++) {
-    // std::cout << " ID " << id << " Charged-TrakL " << AdeptIntegration::Instance().fUserData[tid].scoringPerVolume.chargedTrackLength[id] / copcore::units::mm
-    //          << " mm; Energy-Dep " << AdeptIntegration::Instance().fUserData[tid].scoringPerVolume.energyDeposit[id] / copcore::units::MeV << " MeV" << std::endl;
-    fHitMaker->make(G4FastHit(G4ThreeVector(id, 0, 0), AdeptIntegration::Instance().fUserData[tid].scoringPerVolume.energyDeposit[id] / copcore::units::MeV), aFastTrack); 
-  } 
-
-//      generatedHits++;
-    
-  
+  //      generatedHits++;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -156,4 +152,4 @@ void Par04EMShowerModel::Initialize()
   // This is supposed to set the max batching for Adept to allocate properly the memory
   AdeptIntegration::Instance().SetMaxBatch(25);
   AdeptIntegration::Instance().Initialize();
-} 
+}

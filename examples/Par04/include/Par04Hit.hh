@@ -50,25 +50,24 @@ class G4LogicalVolume;
  *
  */
 
-class Par04Hit : public G4VHit
-{
- public:
+class Par04Hit : public G4VHit {
+public:
   Par04Hit();
-  Par04Hit(const Par04Hit& aRight);
+  Par04Hit(const Par04Hit &aRight);
   virtual ~Par04Hit();
 
-  const Par04Hit& operator=(const Par04Hit& aRight);
-  int operator==(const Par04Hit& aRight) const;
+  const Par04Hit &operator=(const Par04Hit &aRight);
+  int operator==(const Par04Hit &aRight) const;
 
-  inline void* operator new(size_t);
-  inline void operator delete(void* aHit);
+  inline void *operator new(size_t);
+  inline void operator delete(void *aHit);
   /// Visualise hits. If pointer to the logical volume was set, cell shape is
   /// drawn taking into account proper radial position (taken from fRhoId)
   virtual void Draw();
   /// Retrieve atributes' names in order to allow filtering
-  virtual const std::map<G4String, G4AttDef>* GetAttDefs() const;
+  virtual const std::map<G4String, G4AttDef> *GetAttDefs() const;
   /// Create attributes for the visualisation.
-  virtual std::vector<G4AttValue>* CreateAttValues() const;
+  virtual std::vector<G4AttValue> *CreateAttValues() const;
   /// Print hit properties.
   virtual void Print();
   /// Set position
@@ -93,7 +92,7 @@ class Par04Hit : public G4VHit
   inline G4int GetAbsoid() const { return fAbsoId; }
   /// Set absorber id of the cell in the readout segmentation
   inline void SetAbsoid(G4int aZ) { fAbsoId = aZ; }
- /// Set time
+  /// Set time
   inline void SetTime(G4double aTime) { fTime = aTime; }
   /// Get time
   inline G4double GetTime() const { return fTime; }
@@ -102,11 +101,11 @@ class Par04Hit : public G4VHit
   /// Get type (0 = full sim, 1 = fast sim)
   inline G4int GetType() const { return fType; }
   // Set pointer to cell logical volume
-  inline void SetLogV(G4LogicalVolume* aLogVol) { fLogVol = aLogVol; }
+  inline void SetLogV(G4LogicalVolume *aLogVol) { fLogVol = aLogVol; }
   // Get pointer to cell logical volume
-  inline const G4LogicalVolume* GetLogVol() { return fLogVol; }
+  inline const G4LogicalVolume *GetLogVol() { return fLogVol; }
 
- public:
+public:
   /// Energy deposit
   G4double fEdep = 0;
   /// Z ID of readout cell
@@ -122,23 +121,22 @@ class Par04Hit : public G4VHit
   /// Type: 0 = full sim, 1 = fast sim
   G4int fType = -1;
   /// Pointer to logical volume for visualisation
-  G4LogicalVolume* fLogVol = nullptr;
+  G4LogicalVolume *fLogVol = nullptr;
 };
 
 typedef G4THitsCollection<Par04Hit> Par04HitsCollection;
 
-extern G4ThreadLocal G4Allocator<Par04Hit>* Par04HitAllocator;
+extern G4ThreadLocal G4Allocator<Par04Hit> *Par04HitAllocator;
 
-inline void* Par04Hit::operator new(size_t)
+inline void *Par04Hit::operator new(size_t)
 {
-  if(!Par04HitAllocator)
-    Par04HitAllocator = new G4Allocator<Par04Hit>;
-  return (void*) Par04HitAllocator->MallocSingle();
+  if (!Par04HitAllocator) Par04HitAllocator = new G4Allocator<Par04Hit>;
+  return (void *)Par04HitAllocator->MallocSingle();
 }
 
-inline void Par04Hit::operator delete(void* aHit)
+inline void Par04Hit::operator delete(void *aHit)
 {
-  Par04HitAllocator->FreeSingle((Par04Hit*) aHit);
+  Par04HitAllocator->FreeSingle((Par04Hit *)aHit);
 }
 
 #endif /* PAR03HIT_HH */

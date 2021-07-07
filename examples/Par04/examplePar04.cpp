@@ -52,42 +52,32 @@
 #include "G4UIExecutive.hh"
 #include <sstream>
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
   // Macro name from arguments
   G4String batchMacroName;
   G4bool useInteractiveMode = true;
-  G4String helpMsg(
-    "Usage: " + G4String(argv[0]) +
-    " [option(s)] \n No additional arguments triggers an interactive mode "
-    "executing vis.mac macro. \n Options:\n\t-h\t\tdisplay this help "
-    "message\n\t-m MACRO\ttriggers a batch mode executing MACRO\n");
-  for(G4int i = 1; i < argc; ++i)
-  {
+  G4String helpMsg("Usage: " + G4String(argv[0]) +
+                   " [option(s)] \n No additional arguments triggers an interactive mode "
+                   "executing vis.mac macro. \n Options:\n\t-h\t\tdisplay this help "
+                   "message\n\t-m MACRO\ttriggers a batch mode executing MACRO\n");
+  for (G4int i = 1; i < argc; ++i) {
     G4String argument(argv[i]);
-    if(argument == "-h" || argument == "--help")
-    {
+    if (argument == "-h" || argument == "--help") {
       G4cout << helpMsg << G4endl;
       return 0;
-    }
-    else if(argument == "-m")
-    {
+    } else if (argument == "-m") {
       batchMacroName     = G4String(argv[i + 1]);
       useInteractiveMode = false;
       ++i;
-    }
-    else
-    {
+    } else {
       G4Exception("main", "Unknown argument", FatalErrorInArgument,
-                  ("Unknown argument passed to " + G4String(argv[0]) + " : " +
-                   argument + "\n" + helpMsg)
-                    .c_str());
+                  ("Unknown argument passed to " + G4String(argv[0]) + " : " + argument + "\n" + helpMsg).c_str());
     }
   }
 
   // Initialization of default Run manager
-  auto* runManager =
-    G4RunManagerFactory::CreateRunManager(G4RunManagerType::Default);
+  auto *runManager = G4RunManagerFactory::CreateRunManager(G4RunManagerType::Default);
   //  G4RunManagerFactory::CreateRunManager(G4RunManagerType::Serial);
 
   // Detector geometry:
@@ -117,19 +107,16 @@ int main(int argc, char** argv)
   // Visualization:
   //----------------
   G4cout << "Instantiating Visualization Manager......." << G4endl;
-  G4VisManager* visManager = new G4VisExecutive;
+  G4VisManager *visManager = new G4VisExecutive;
   visManager->Initialize();
-  G4UImanager* UImanager = G4UImanager::GetUIpointer();
+  G4UImanager *UImanager = G4UImanager::GetUIpointer();
 
-  if(useInteractiveMode)
-  {
-    G4UIExecutive* ui = new G4UIExecutive(argc, argv);
+  if (useInteractiveMode) {
+    G4UIExecutive *ui = new G4UIExecutive(argc, argv);
     UImanager->ApplyCommand("/control/execute vis.mac");
     ui->SessionStart();
     delete ui;
-  }
-  else
-  {
+  } else {
     G4String command = "/control/execute ";
     UImanager->ApplyCommand(command + batchMacroName);
   }

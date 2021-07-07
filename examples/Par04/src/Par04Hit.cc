@@ -38,11 +38,9 @@
 #include "G4VVisManager.hh"
 #include "G4LogicalVolume.hh"
 
-G4ThreadLocal G4Allocator<Par04Hit>* Par04HitAllocator;
+G4ThreadLocal G4Allocator<Par04Hit> *Par04HitAllocator;
 
-Par04Hit::Par04Hit()
-  : G4VHit()
-{}
+Par04Hit::Par04Hit() : G4VHit() {}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -50,8 +48,7 @@ Par04Hit::~Par04Hit() {}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-Par04Hit::Par04Hit(const Par04Hit& aRight)
-  : G4VHit()
+Par04Hit::Par04Hit(const Par04Hit &aRight) : G4VHit()
 {
   fEdep   = aRight.fEdep;
   fZId    = aRight.fZId;
@@ -65,7 +62,7 @@ Par04Hit::Par04Hit(const Par04Hit& aRight)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-const Par04Hit& Par04Hit::operator=(const Par04Hit& aRight)
+const Par04Hit &Par04Hit::operator=(const Par04Hit &aRight)
 {
   fEdep   = aRight.fEdep;
   fZId    = aRight.fZId;
@@ -80,7 +77,7 @@ const Par04Hit& Par04Hit::operator=(const Par04Hit& aRight)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-int Par04Hit::operator==(const Par04Hit& aRight) const
+int Par04Hit::operator==(const Par04Hit &aRight) const
 {
   return (fZId == aRight.fZId && fAbsoId == aRight.fAbsoId);
 }
@@ -129,30 +126,24 @@ void Par04Hit::Draw()
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-const std::map<G4String, G4AttDef>* Par04Hit::GetAttDefs() const
+const std::map<G4String, G4AttDef> *Par04Hit::GetAttDefs() const
 {
   G4bool isNew;
-  std::map<G4String, G4AttDef>* store =
-    G4AttDefStore::GetInstance("Par04Hit", isNew);
-  if(isNew)
-  {
-    (*store)["HitType"] =
-      G4AttDef("HitType", "Hit Type", "Physics", "", "G4String");
-    (*store)["Energy"] = G4AttDef("Energy", "Energy Deposited", "Physics",
-                                  "G4BestUnit", "G4double");
-    (*store)["Time"] =
-      G4AttDef("Time", "Time", "Physics", "G4BestUnit", "G4double");
-    (*store)["Pos"] =
-      G4AttDef("Pos", "Position", "Physics", "G4BestUnit", "G4ThreeVector");
+  std::map<G4String, G4AttDef> *store = G4AttDefStore::GetInstance("Par04Hit", isNew);
+  if (isNew) {
+    (*store)["HitType"] = G4AttDef("HitType", "Hit Type", "Physics", "", "G4String");
+    (*store)["Energy"]  = G4AttDef("Energy", "Energy Deposited", "Physics", "G4BestUnit", "G4double");
+    (*store)["Time"]    = G4AttDef("Time", "Time", "Physics", "G4BestUnit", "G4double");
+    (*store)["Pos"]     = G4AttDef("Pos", "Position", "Physics", "G4BestUnit", "G4ThreeVector");
   }
   return store;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-std::vector<G4AttValue>* Par04Hit::CreateAttValues() const
+std::vector<G4AttValue> *Par04Hit::CreateAttValues() const
 {
-  std::vector<G4AttValue>* values = new std::vector<G4AttValue>;
+  std::vector<G4AttValue> *values = new std::vector<G4AttValue>;
   values->push_back(G4AttValue("HitType", "HadPar04Hit", ""));
   values->push_back(G4AttValue("Energy", G4BestUnit(fEdep, "Energy"), ""));
   values->push_back(G4AttValue("Time", G4BestUnit(fTime, "Time"), ""));
@@ -164,7 +155,6 @@ std::vector<G4AttValue>* Par04Hit::CreateAttValues() const
 
 void Par04Hit::Print()
 {
-  std::cout << "\tHit " << fEdep / MeV << " MeV at " << fPos / cm
-            << " cm (z)= (" << fZId << "," << fAbsoId
-            << "), " << fTime << " ns" << std::endl;
+  std::cout << "\tHit " << fEdep / MeV << " MeV at " << fPos / cm << " cm (z)= (" << fZId << "," << fAbsoId << "), "
+            << fTime << " ns" << std::endl;
 }

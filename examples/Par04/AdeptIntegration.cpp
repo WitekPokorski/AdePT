@@ -6,10 +6,10 @@
 
 #include "G4RunManager.hh"
 
-
 #include "VecGeom/management/GeoManager.h"
 
-void AdeptIntegration::AddTrack(int tid, int pdg, double energy, double x, double y, double z, double dirx, double diry, double dirz)
+void AdeptIntegration::AddTrack(int tid, int pdg, double energy, double x, double y, double z, double dirx, double diry,
+                                double dirz)
 {
   fBuffer[tid].toDevice.emplace_back(pdg, energy, x, y, z, dirx, diry, dirz);
   if (pdg == 11)
@@ -27,7 +27,7 @@ void AdeptIntegration::Initialize()
 
   assert(vecgeom::GeoManager::Instance().IsClosed() && "VecGeom geometry not closed.");
   const vecgeom::cxx::VPlacedVolume *world = vecgeom::GeoManager::Instance().GetWorld();
-  fNthreads = G4RunManager::GetRunManager()->GetNumberOfThreads();
+  fNthreads                                = G4RunManager::GetRunManager()->GetNumberOfThreads();
   std::cout << "=== AdeptIntegration: Number of threads: " << fNthreads << std::endl;
 
   AdeptIntegration::InitializeGPU(world, fMaxBatch);

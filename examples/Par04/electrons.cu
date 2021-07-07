@@ -123,14 +123,14 @@ static __device__ __forceinline__ void TransportElectrons(Track *electrons, cons
 
         gamma1.InitAsSecondary(/*parent=*/currentTrack);
         gamma1.rngState = currentTrack.rngState.Branch();
-        gamma1.energy = copcore::units::kElectronMassC2;
+        gamma1.energy   = copcore::units::kElectronMassC2;
         gamma1.dir.Set(sint * cosPhi, sint * sinPhi, cost);
 
         gamma2.InitAsSecondary(/*parent=*/currentTrack);
         // Reuse the RNG state of the dying track.
         gamma2.rngState = currentTrack.rngState;
-        gamma2.energy = copcore::units::kElectronMassC2;
-        gamma2.dir    = -gamma1.dir;
+        gamma2.energy   = copcore::units::kElectronMassC2;
+        gamma2.dir      = -gamma1.dir;
       }
       // Particles are killed by not enqueuing them into the new activeQueue.
       continue;
@@ -189,7 +189,7 @@ static __device__ __forceinline__ void TransportElectrons(Track *electrons, cons
 
       secondary.InitAsSecondary(/*parent=*/currentTrack);
       secondary.rngState = newRNG;
-      secondary.energy = deltaEkin;
+      secondary.energy   = deltaEkin;
       secondary.dir.Set(dirSecondary[0], dirSecondary[1], dirSecondary[2]);
 
       currentTrack.energy = energy - deltaEkin;
@@ -216,7 +216,7 @@ static __device__ __forceinline__ void TransportElectrons(Track *electrons, cons
 
       gamma.InitAsSecondary(/*parent=*/currentTrack);
       gamma.rngState = newRNG;
-      gamma.energy = deltaEkin;
+      gamma.energy   = deltaEkin;
       gamma.dir.Set(dirSecondary[0], dirSecondary[1], dirSecondary[2]);
 
       currentTrack.energy = energy - deltaEkin;
@@ -239,13 +239,13 @@ static __device__ __forceinline__ void TransportElectrons(Track *electrons, cons
 
       gamma1.InitAsSecondary(/*parent=*/currentTrack);
       gamma1.rngState = newRNG;
-      gamma1.energy = theGamma1Ekin;
+      gamma1.energy   = theGamma1Ekin;
       gamma1.dir.Set(theGamma1Dir[0], theGamma1Dir[1], theGamma1Dir[2]);
 
       gamma2.InitAsSecondary(/*parent=*/currentTrack);
       // Reuse the RNG state of the dying track.
       gamma2.rngState = currentTrack.rngState;
-      gamma2.energy = theGamma2Ekin;
+      gamma2.energy   = theGamma2Ekin;
       gamma2.dir.Set(theGamma2Dir[0], theGamma2Dir[1], theGamma2Dir[2]);
 
       // The current track is killed by not enqueuing into the next activeQueue.

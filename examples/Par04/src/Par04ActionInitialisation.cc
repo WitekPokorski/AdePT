@@ -30,11 +30,10 @@
 #include "Par04EventAction.hh"
 #include "Par04RunAction.hh"
 
-Par04ActionInitialisation::Par04ActionInitialisation(
-  Par04DetectorConstruction* aDetector)
-  : G4VUserActionInitialization()
-  , fDetector(aDetector)
-{}
+Par04ActionInitialisation::Par04ActionInitialisation(Par04DetectorConstruction *aDetector)
+    : G4VUserActionInitialization(), fDetector(aDetector)
+{
+}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 

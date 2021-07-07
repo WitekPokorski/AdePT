@@ -35,9 +35,6 @@
 class Par04EMShowerMessenger;
 class G4FastSimHitMaker;
 
-
-
-
 /**
  * @brief Example fast simulation model for EM showers.
  *
@@ -48,21 +45,20 @@ class G4FastSimHitMaker;
  * Using AdePT
  */
 
-class Par04EMShowerModel : public G4VFastSimulationModel
-{
- public:
-  Par04EMShowerModel(G4String, G4Region*);
+class Par04EMShowerModel : public G4VFastSimulationModel {
+public:
+  Par04EMShowerModel(G4String, G4Region *);
   Par04EMShowerModel(G4String);
   ~Par04EMShowerModel();
 
   /// There are no kinematics constraints. True is returned.
-  virtual G4bool ModelTrigger(const G4FastTrack&) final;
+  virtual G4bool ModelTrigger(const G4FastTrack &) final;
   /// Model is applicable to electrons, positrons, and photons.
-  virtual G4bool IsApplicable(const G4ParticleDefinition&) final;
+  virtual G4bool IsApplicable(const G4ParticleDefinition &) final;
 
   /// Take particle out of the full simulation (kill it at the entrance
   /// depositing all the energy). Simulate the full shower using AdePT library.
-  virtual void DoIt(const G4FastTrack&, G4FastStep&) final;
+  virtual void DoIt(const G4FastTrack &, G4FastStep &) final;
 
   /// Print current settings.
   void Print() const;
@@ -71,28 +67,27 @@ class Par04EMShowerModel : public G4VFastSimulationModel
 
   void Initialize();
 
- private:
+private:
   /// Messenger for configuration
-  Par04EMShowerMessenger* fMessenger;
+  Par04EMShowerMessenger *fMessenger;
   /// Helper class for creation of hits within the sensitive detector
   std::unique_ptr<G4FastSimHitMaker> fHitMaker;
- 
-G4double ProductionCut = 0.7 * copcore::units::mm;
 
-double CalorSizeYZ       = 40 * copcore::units::cm;
-int NbOfLayers           = 50;
-int NbOfAbsorbers        = 2;
-double GapThickness      = 2.3 * copcore::units::mm;
-double AbsorberThickness = 5.7 * copcore::units::mm;
+  G4double ProductionCut = 0.7 * copcore::units::mm;
 
-double LayerThickness = GapThickness + AbsorberThickness;
-double CalorThickness = NbOfLayers * LayerThickness;
+  double CalorSizeYZ       = 40 * copcore::units::cm;
+  int NbOfLayers           = 50;
+  int NbOfAbsorbers        = 2;
+  double GapThickness      = 2.3 * copcore::units::mm;
+  double AbsorberThickness = 5.7 * copcore::units::mm;
 
-double WorldSizeX  = 1.2 * CalorThickness;
-double WorldSizeYZ = 1.2 * CalorSizeYZ;
+  double LayerThickness = GapThickness + AbsorberThickness;
+  double CalorThickness = NbOfLayers * LayerThickness;
 
-int NumVolumes = 1 + 1 + NbOfLayers * (1 + NbOfAbsorbers);
+  double WorldSizeX  = 1.2 * CalorThickness;
+  double WorldSizeYZ = 1.2 * CalorSizeYZ;
+
+  int NumVolumes = 1 + 1 + NbOfLayers * (1 + NbOfAbsorbers);
   int MCIndex[100];
-
 };
 #endif /* PAR03EMSHOWERMODEL_HH */

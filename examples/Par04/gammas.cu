@@ -127,13 +127,13 @@ __global__ void TransportGammas(Track *gammas, const adept::MParray *active, Sec
 
       electron.InitAsSecondary(/*parent=*/currentTrack);
       electron.rngState = newRNG;
-      electron.energy = elKinEnergy;
+      electron.energy   = elKinEnergy;
       electron.dir.Set(dirSecondaryEl[0], dirSecondaryEl[1], dirSecondaryEl[2]);
 
       positron.InitAsSecondary(/*parent=*/currentTrack);
       // Reuse the RNG state of the dying track.
       positron.rngState = currentTrack.rngState;
-      positron.energy = posKinEnergy;
+      positron.energy   = posKinEnergy;
       positron.dir.Set(dirSecondaryPos[0], dirSecondaryPos[1], dirSecondaryPos[2]);
 
       // The current track is killed by not enqueuing into the next activeQueue.
@@ -160,8 +160,8 @@ __global__ void TransportGammas(Track *gammas, const adept::MParray *active, Sec
 
         electron.InitAsSecondary(/*parent=*/currentTrack);
         electron.rngState = newRNG;
-        electron.energy = energyEl;
-        electron.dir    = energy * currentTrack.dir - newEnergyGamma * newDirGamma;
+        electron.energy   = energyEl;
+        electron.dir      = energy * currentTrack.dir - newEnergyGamma * newDirGamma;
         electron.dir.Normalize();
       } else {
         atomicAdd(&globalScoring->energyDeposit, energyEl);

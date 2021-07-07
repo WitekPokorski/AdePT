@@ -54,13 +54,12 @@ const G4int kMaxAbsor = 10; // 0 + 9
  *
  */
 
-class Par04DetectorConstruction : public G4VUserDetectorConstruction
-{
- public:
+class Par04DetectorConstruction : public G4VUserDetectorConstruction {
+public:
   Par04DetectorConstruction();
   virtual ~Par04DetectorConstruction();
 
-  virtual G4VPhysicalVolume* Construct() final;
+  virtual G4VPhysicalVolume *Construct() final;
   void CreateVecGeomWorld();
   virtual void ConstructSDandField() final;
 
@@ -88,7 +87,6 @@ class Par04DetectorConstruction : public G4VUserDetectorConstruction
   const G4Material *GetWorldMaterial() { return fDefaultMaterial; }
   const G4VPhysicalVolume *GetAbsorber(G4int i) { return fPhysiAbsor[i]; }
 
-
   // Set uniform magnetic field
   inline void SetMagField(const G4ThreeVector &fv) { fMagFieldVector = fv; }
   void SetPrimaryGenerator(Par04PrimaryGeneratorAction *pg) { fPrimaryGenerator = pg; }
@@ -96,9 +94,9 @@ class Par04DetectorConstruction : public G4VUserDetectorConstruction
   // Print detector information
   void Print() const;
 
- private:
+private:
   /// Messenger that allows to modify geometry
-  Par04DetectorMessenger* fDetectorMessenger;
+  Par04DetectorMessenger *fDetectorMessenger;
 
   G4int fNbOfAbsor = 2;
   G4Material *fAbsorMaterial[kMaxAbsor];
@@ -134,7 +132,6 @@ class Par04DetectorConstruction : public G4VUserDetectorConstruction
   // field related members
   G4ThreeVector fMagFieldVector;
   Par04PrimaryGeneratorAction *fPrimaryGenerator;
-
 };
 
 #endif /* PAR03DETECTORCONSTRUCTION_H */

@@ -44,24 +44,23 @@ class Par04PrimaryGeneratorMessenger;
  *
  */
 
-class Par04PrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
-{
- public:
-  Par04PrimaryGeneratorAction(Par04DetectorConstruction*);
+class Par04PrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction {
+public:
+  Par04PrimaryGeneratorAction(Par04DetectorConstruction *);
   virtual ~Par04PrimaryGeneratorAction();
 
   void Print() const;
   void SetDefaultKinematic();
-  void SetRndmBeam(G4double val) { fRndmBeam = val;}
-  virtual void GeneratePrimaries(G4Event*) final;
+  void SetRndmBeam(G4double val) { fRndmBeam = val; }
+  virtual void GeneratePrimaries(G4Event *) final;
 
- private:
+private:
   /// Particle gun
-  G4ParticleGun* fParticleGun;
-  Par04DetectorConstruction*  fDetector;
-  G4double fRndmBeam;   //lateral random beam extension in fraction sizeYZ/2
+  G4ParticleGun *fParticleGun;
+  Par04DetectorConstruction *fDetector;
+  G4double fRndmBeam; // lateral random beam extension in fraction sizeYZ/2
 
-  Par04PrimaryGeneratorMessenger* fGunMessenger;
+  Par04PrimaryGeneratorMessenger *fGunMessenger;
 };
 
 #endif /* PAR04PRIMARYGENERATORACTION_HH */

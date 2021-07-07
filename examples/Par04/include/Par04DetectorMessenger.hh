@@ -48,34 +48,33 @@ class G4UIcmdWith3VectorAndUnit;
  *
  */
 
-class Par04DetectorMessenger : public G4UImessenger
-{
- public:
-  Par04DetectorMessenger(Par04DetectorConstruction*);
+class Par04DetectorMessenger : public G4UImessenger {
+public:
+  Par04DetectorMessenger(Par04DetectorConstruction *);
   ~Par04DetectorMessenger();
 
   /// Invokes appropriate methods based on the typed command
-  virtual void SetNewValue(G4UIcommand*, G4String) final;
+  virtual void SetNewValue(G4UIcommand *, G4String) final;
   /// Retrieves the current settings
-  virtual G4String GetCurrentValue(G4UIcommand*) final;
+  virtual G4String GetCurrentValue(G4UIcommand *) final;
 
- private:
+private:
   /// Detector construction to setup
-  Par04DetectorConstruction* fDetector = nullptr;
+  Par04DetectorConstruction *fDetector = nullptr;
   /// Command to set the directory common to all messengers in this example
   /// /Par04
-  G4UIdirectory* fExampleDir = nullptr;
+  G4UIdirectory *fExampleDir = nullptr;
   /// Command to set the directory for detector settings /Par04/detector
-  G4UIdirectory* fDetectorDir = nullptr;
+  G4UIdirectory *fDetectorDir = nullptr;
   /// Command printing current settings
-  G4UIcmdWithoutParameter* fPrintCmd = nullptr;
-  
-  G4UIcmdWithADoubleAndUnit* fSizeYZCmd = nullptr;
-  G4UIcmdWithAnInteger*      fNbLayersCmd = nullptr;
-  G4UIcmdWithAnInteger*      fNbAbsorCmd = nullptr;
-  G4UIcommand*               fAbsorCmd = nullptr;
+  G4UIcmdWithoutParameter *fPrintCmd = nullptr;
+
+  G4UIcmdWithADoubleAndUnit *fSizeYZCmd = nullptr;
+  G4UIcmdWithAnInteger *fNbLayersCmd    = nullptr;
+  G4UIcmdWithAnInteger *fNbAbsorCmd     = nullptr;
+  G4UIcommand *fAbsorCmd                = nullptr;
   //
-  G4UIcmdWith3VectorAndUnit* fFieldCmd = nullptr;
+  G4UIcmdWith3VectorAndUnit *fFieldCmd = nullptr;
 };
 
 #endif
