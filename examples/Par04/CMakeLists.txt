@@ -15,6 +15,6 @@ message(STATUS "srcs: ${sources}")
 
 target_include_directories(examplePar04 PRIVATE ${PROJECT_SOURCE_DIR}/examples/Par04/include ${PROJECT_SOURCE_DIR}/examples/Par04)
 target_link_libraries(examplePar04 PRIVATE AdePT CopCore::CopCore VecGeom::vecgeom VecGeom::vecgeomcuda_static VecGeom::vgdml ${Geant4_LIBRARIES} G4HepEm::g4HepEmData G4HepEm::g4HepEmInit G4HepEm::g4HepEmRun)
-target_compile_options(examplePar04 PRIVATE "$<$<AND:$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>,$<COMPILE_LANGUAGE:CUDA>>:-G;-src-in-ptx>")
+target_compile_options(examplePar04 PRIVATE "$<$<AND:$<OR:$<CONFIG:Debug>>,$<COMPILE_LANGUAGE:CUDA>>:-G;-src-in-ptx>")
 
 set_target_properties(examplePar04 PROPERTIES CUDA_SEPARABLE_COMPILATION ON CUDA_RESOLVE_DEVICE_SYMBOLS ON)

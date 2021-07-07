@@ -10,6 +10,7 @@
 #define ADEPT_INTEGRATION_H
 
 #include <vector>
+#include <atomic>
 #include <VecGeom/base/Config.h>
 #ifdef VECGEOM_ENABLE_CUDA
 #include <VecGeom/management/CudaManager.h> // forward declares vecgeom::cxx::VPlacedVolume
@@ -17,7 +18,7 @@
 
 #include "Scoring.h" // This should be removed from here!
 
-struct AdeptIntegration {
+class AdeptIntegration {
 public:
   static constexpr int kMaxThreads = 256;
 
@@ -58,6 +59,7 @@ static AdeptIntegration &Instance()
 
 private:
   bool fInit {false};                  ///< Service initialized flag
+  std::atomic_flag fCleanup {false};   ///< Make sure we cleanup only once
   int fNthreads {0};                   ///< Number of cpu threads
   int fMaxBatch {0};                   ///< Max batch size for allocating GPU memory
   TrackBuffer fBuffer[kMaxThreads];    ///< Vector of buffers of tracks to/from device (per thread)

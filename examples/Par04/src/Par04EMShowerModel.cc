@@ -134,8 +134,8 @@ void Par04EMShowerModel::DoIt(const G4FastTrack& aFastTrack,
 
 
 for (auto id =0; id != NumVolumes; id++) {
-    std::cout << " ID " << id << " Charged-TrakL " << AdeptIntegration::Instance().fUserData[tid].scoringPerVolume.chargedTrackLength[id] / copcore::units::mm
-              << " mm; Energy-Dep " << AdeptIntegration::Instance().fUserData[tid].scoringPerVolume.energyDeposit[id] / copcore::units::MeV << " MeV" << std::endl; 
+    // std::cout << " ID " << id << " Charged-TrakL " << AdeptIntegration::Instance().fUserData[tid].scoringPerVolume.chargedTrackLength[id] / copcore::units::mm
+    //          << " mm; Energy-Dep " << AdeptIntegration::Instance().fUserData[tid].scoringPerVolume.energyDeposit[id] / copcore::units::MeV << " MeV" << std::endl;
     fHitMaker->make(G4FastHit(G4ThreeVector(id, 0, 0), AdeptIntegration::Instance().fUserData[tid].scoringPerVolume.energyDeposit[id] / copcore::units::MeV), aFastTrack); 
   } 
 

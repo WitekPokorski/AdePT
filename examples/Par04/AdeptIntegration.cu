@@ -318,7 +318,6 @@ void AdeptIntegration::FreeGPU()
 {
   // Free resources.
   for (int tid = 0; tid < fNthreads; ++tid) {
-    COPCORE_CUDA_CHECK(cudaFree(fUserData[tid].MCIndex_dev));
     COPCORE_CUDA_CHECK(cudaFree(fUserData[tid].chargedTrackLength_dev));
     COPCORE_CUDA_CHECK(cudaFree(fUserData[tid].energyDeposit_dev));
 
@@ -343,6 +342,7 @@ void AdeptIntegration::FreeGPU()
     }
   }
 
+  COPCORE_CUDA_CHECK(cudaFree(fUserData[0].MCIndex_dev));
   FreeG4HepEm(gpuState[0].hepem_state);
 }
 

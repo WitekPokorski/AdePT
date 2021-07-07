@@ -28,6 +28,8 @@
 #include "Par04RunAction.hh"
 #include "Par04DetectorConstruction.hh"
 
+#include "AdeptIntegration.h"
+
 #include "g4analysis.hh"
 
 Par04RunAction::Par04RunAction(Par04DetectorConstruction* aDetector)
@@ -115,6 +117,7 @@ void Par04RunAction::BeginOfRunAction(const G4Run*)
 
 void Par04RunAction::EndOfRunAction(const G4Run*)
 {
+  AdeptIntegration::Instance().Cleanup();
   /*
   auto analysisManager = G4AnalysisManager::Instance();
   analysisManager->Write();

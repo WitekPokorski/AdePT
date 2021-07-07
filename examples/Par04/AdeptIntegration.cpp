@@ -36,7 +36,10 @@ void AdeptIntegration::Initialize()
 
 void AdeptIntegration::Cleanup()
 {
-  AdeptIntegration::FreeGPU();
+  if (!fCleanup.test_and_set()) {
+    std::cout << "=== Cleaning up GPU ...\n";
+    AdeptIntegration::FreeGPU();
+  }
 }
 
 void AdeptIntegration::Shower(int event, int tid)
