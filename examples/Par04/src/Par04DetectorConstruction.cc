@@ -64,8 +64,6 @@
 #include <VecGeom/volumes/PlacedVolume.h>
 #include <VecGeom/volumes/UnplacedBox.h>
 
-#include "Scoring.h"
-
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 Par04DetectorConstruction::Par04DetectorConstruction() : G4VUserDetectorConstruction()
@@ -75,7 +73,10 @@ Par04DetectorConstruction::Par04DetectorConstruction() : G4VUserDetectorConstruc
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-Par04DetectorConstruction::~Par04DetectorConstruction() {}
+Par04DetectorConstruction::~Par04DetectorConstruction()
+{
+  delete fShowerModel;
+}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -188,9 +189,9 @@ void Par04DetectorConstruction::ConstructSDandField()
     SetSensitiveDetector(fLogicAbsor[k], caloSD);
   }
 
-  auto detectorRegion             = G4RegionStore::GetInstance()->GetRegion("DetectorRegion");
-  Par04EMShowerModel *showermodel = new Par04EMShowerModel("model", detectorRegion);
-  showermodel->Initialize();
+  auto detectorRegion = G4RegionStore::GetInstance()->GetRegion("DetectorRegion");
+  fShowerModel        = new Par04EMShowerModel("model", detectorRegion);
+  fShowerModel->Initialize();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

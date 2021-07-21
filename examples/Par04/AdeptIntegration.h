@@ -16,7 +16,10 @@
 #include <VecGeom/management/CudaManager.h> // forward declares vecgeom::cxx::VPlacedVolume
 #endif
 
-#include "Scoring.h" // This should be removed from here!
+#include <G4HepEmData.hh>
+#include <G4HepEmParameters.hh>
+
+#include "UserScoring.h" // This should be removed from here!
 
 class AdeptIntegration {
 public:
@@ -52,39 +55,45 @@ public:
     }
   };
 
+  struct G4HepEmState {
+    G4HepEmData data;
+    G4HepEmParameters parameters;
+  };
+
   /// @brief Returns the service instance
-  static AdeptIntegration &Instance()
-  {
-    static AdeptIntegration instance;
-    return instance;
-  }
 
 private:
-  bool fInit{false};                             ///< Service initialized flag
-  std::atomic_flag fCleanup{false};              ///< Make sure we cleanup only once
-  int fNthreads{0};                              ///< Number of cpu threads
-  int fMaxBatch{0};                              ///< Max batch size for allocating GPU memory
-  TrackBuffer fBuffer[kMaxThreads];              ///< Vector of buffers of tracks to/from device (per thread)
-  TrackData *toDevice_dev[kMaxThreads]{nullptr}; ///< Track buffer on device
+  bool fInit{false};                ///< Service initialized flag
+  std::atomic_flag fCleanup{false}; ///< Make sure we cleanup only once
+  int fNthreads{0};                 ///< Number of cpu threads
+  int fMaxBatch{0};                 ///< Max batch size for allocating GPU memory
+  TrackBuffer fBuffer;              ///< Vector of buffers of tracks to/from device (per thread)
+  TrackData *toDevice_dev{nullptr}; ///< Track buffer on device
+  void *fGPUstate{nullptr};         ///< CUDA state placeholder
 
-  void InitializeGPU(const vecgeom::cxx::VPlacedVolume *world, int max_batch);
-  void ShowerGPU(int event, int tid, TrackBuffer const &buffer);
+  void InitializeUserSegmentation() { UserMCIndex::GetInstance().InitializeOnGPU(); }
+  void InitializeUserData() { fUserData.InitializeOnGPU(); }
+  bool InitializeGeometry(const vecgeom::cxx::VPlacedVolume *world);
+  bool InitializePhysics();
+  void InitializeGPU();
+  void ShowerGPU(int event, TrackBuffer const &buffer);
   void FreeGPU();
 
 public:
-  UserData fUserData[kMaxThreads]; ///< User data (to be removed)
+  UserData fUserData;                 ///< User data (to be removed)
+  static G4HepEmState *g4hepem_state; ///< The HepEm state singleton
 
 public:
   /// @brief Adds a track to the buffer
-  void AddTrack(int tid, int pdg, double energy, double x, double y, double z, double dirx, double diry, double dirz);
+  void AddTrack(int pdg, double energy, double x, double y, double z, double dirx, double diry, double dirz);
   /// @brief Set maximum batch size
   void SetMaxBatch(int npart) { fMaxBatch = npart; }
   /// @brief Initialize service and copy geometry & physics data on device
-  void Initialize();
+  void Initialize(bool common_data = false);
   /// @brief Final cleanup
   void Cleanup();
   /// @brief Interface for transporting a buffer of tracks in AdePT.
-  void Shower(int event, int tid);
+  void Shower(int event);
 };
 
 #endif

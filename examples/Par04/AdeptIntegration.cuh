@@ -6,52 +6,11 @@
 
 #include "AdeptIntegration.h"
 
-#include <AdePT/MParray.h>
-#include <CopCore/SystemOfUnits.h>
-#include <CopCore/Ranluxpp.h>
+#include "Track.cuh"
 
 #include <G4HepEmData.hh>
 #include <G4HepEmParameters.hh>
 #include <G4HepEmRandomEngine.hh>
-
-#include <VecGeom/base/Vector3D.h>
-#include <VecGeom/navigation/NavStateIndex.h>
-
-// A data structure to represent a particle track. The particle type is implicit
-// by the queue and not stored in memory.
-struct Track {
-  RanluxppDouble rngState;
-  double energy;
-  double numIALeft[3];
-
-  vecgeom::Vector3D<double> pos;
-  vecgeom::Vector3D<double> dir;
-  vecgeom::NavStateIndex currentState;
-  vecgeom::NavStateIndex nextState;
-
-  __host__ __device__ double Uniform() { return rngState.Rndm(); }
-
-  __host__ __device__ void SwapStates()
-  {
-    auto state         = this->currentState;
-    this->currentState = this->nextState;
-    this->nextState    = state;
-  }
-
-  __host__ __device__ void InitAsSecondary(const Track &parent)
-  {
-    // The caller is responsible to branch a new RNG state and to set the energy.
-    this->numIALeft[0] = -1.0;
-    this->numIALeft[1] = -1.0;
-    this->numIALeft[2] = -1.0;
-
-    // A secondary inherits the position of its parent; the caller is responsible
-    // to update the directions.
-    this->pos          = parent.pos;
-    this->currentState = parent.currentState;
-    this->nextState    = parent.nextState;
-  }
-};
 
 // Defined in TestEm3.cu
 extern __constant__ __device__ int Zero;
@@ -133,6 +92,52 @@ struct Secondaries {
   ParticleGenerator electrons;
   ParticleGenerator positrons;
   ParticleGenerator gammas;
+};
+
+// A bundle of queues per particle type:
+//  * Two for active particles, one for the current iteration and the second for the next.
+//  * One for all particles that need to be relocated to the next volume.
+struct ParticleQueues {
+  adept::MParray *currentlyActive;
+  adept::MParray *nextActive;
+  adept::MParray *relocate;
+
+  void SwapActive() { std::swap(currentlyActive, nextActive); }
+};
+
+struct ParticleType {
+  Track *tracks;
+  SlotManager *slotManager;
+  ParticleQueues queues;
+  cudaStream_t stream;
+  cudaEvent_t event;
+
+  enum {
+    Electron = 0,
+    Positron = 1,
+    Gamma    = 2,
+
+    NumParticleTypes,
+  };
+};
+
+// A bundle of queues for the three particle types.
+struct AllParticleQueues {
+  ParticleQueues queues[ParticleType::NumParticleTypes];
+};
+
+// A data structure to transfer statistics after each iteration.
+struct Stats {
+  int inFlight[ParticleType::NumParticleTypes];
+};
+
+struct GPUstate {
+  ParticleType particles[ParticleType::NumParticleTypes];
+  // Create a stream to synchronize kernels of all particle types.
+  cudaStream_t stream;
+  AdeptIntegration::TrackData *toDevice_dev{nullptr};
+  Stats *stats_dev{nullptr};
+  Stats *stats{nullptr};
 };
 
 // Kernels in different TUs.

@@ -7,9 +7,10 @@
 ## Geant4 macro for modelling simplified sampling calorimeters
 ## =============================================================================
 ##
-##/control/verbose 0
 /run/numberOfThreads 4
-##/run/verbose 0
+/control/verbose 0
+/run/verbose 0
+/process/verbose 0
 ##
 ## -----------------------------------------------------------------------------
 ## Setup the ATLASbar simplified sampling calorimeter:

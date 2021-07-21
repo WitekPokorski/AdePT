@@ -31,6 +31,7 @@
 #include "G4VFastSimulationModel.hh"
 //#include <AdePT/ArgParser.h>
 #include <CopCore/SystemOfUnits.h>
+#include "AdeptIntegration.h"
 
 class Par04EMShowerMessenger;
 class G4FastSimHitMaker;
@@ -70,6 +71,9 @@ public:
 private:
   /// Messenger for configuration
   Par04EMShowerMessenger *fMessenger;
+
+  /// AdePT integration
+  AdeptIntegration fAdept;
   /// Helper class for creation of hits within the sensitive detector
   std::unique_ptr<G4FastSimHitMaker> fHitMaker;
 

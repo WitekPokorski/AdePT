@@ -28,6 +28,7 @@
 
 #include "Par04EMShowerMessenger.hh"
 
+#include <G4RunManager.hh>
 #include "G4Electron.hh"
 #include "G4Positron.hh"
 #include "G4Gamma.hh"
@@ -38,8 +39,6 @@
 #include "G4FastSimHitMaker.hh"
 #include "G4EventManager.hh"
 #include "G4Event.hh"
-
-#include "AdeptIntegration.h"
 
 #include "Par04EMShowerModel.hh"
 
@@ -61,7 +60,10 @@ Par04EMShowerModel::Par04EMShowerModel(G4String aModelName)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-Par04EMShowerModel::~Par04EMShowerModel() {}
+Par04EMShowerModel::~Par04EMShowerModel()
+{
+  fAdept.Cleanup();
+}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -112,28 +114,27 @@ void Par04EMShowerModel::DoIt(const G4FastTrack &aFastTrack, G4FastStep &aFastSt
   auto pdg = aFastTrack.GetPrimaryTrack()->GetParticleDefinition()->GetPDGEncoding();
 
   int tid = G4Threading::G4GetThreadId();
-  if (tid < 0) tid = 0;
+  // if (tid < 0) tid = 0;
 
   std::cout << "Thread " << tid << " calling AdePT for particle " << pdg << " energy " << energy << " position "
             << particlePosition[0] << " " << particlePosition[1] << " " << particlePosition[2] << " direction "
             << particleDirection[0] << " " << particleDirection[1] << " " << particleDirection[2] << std::endl;
 
-  AdeptIntegration::Instance().AddTrack(tid, pdg, energy, particlePosition[0], particlePosition[1], particlePosition[2],
-                                        particleDirection[0], particleDirection[1], particleDirection[2]);
+  fAdept.AddTrack(pdg, energy, particlePosition[0], particlePosition[1], particlePosition[2], particleDirection[0],
+                  particleDirection[1], particleDirection[2]);
 
   // I need to pass the particle from Geant4 to AdePT and simulate the shower
-  AdeptIntegration::Instance().Shower(G4EventManager::GetEventManager()->GetConstCurrentEvent()->GetEventID(), tid);
+  fAdept.Shower(G4EventManager::GetEventManager()->GetConstCurrentEvent()->GetEventID());
 
   // Create energy deposit in the detector
 
   for (auto id = 0; id != NumVolumes; id++) {
     // std::cout << " ID " << id << " Charged-TrakL " <<
-    // AdeptIntegration::Instance().fUserData[tid].scoringPerVolume.chargedTrackLength[id] / copcore::units::mm
-    //          << " mm; Energy-Dep " << AdeptIntegration::Instance().fUserData[tid].scoringPerVolume.energyDeposit[id]
+    // fAdept.fUserData[tid].scoringPerVolume.chargedTrackLength[id] / copcore::units::mm
+    //          << " mm; Energy-Dep " << fAdept.fUserData[tid].scoringPerVolume.energyDeposit[id]
     //          / copcore::units::MeV << " MeV" << std::endl;
     fHitMaker->make(
-        G4FastHit(G4ThreeVector(id, 0, 0),
-                  AdeptIntegration::Instance().fUserData[tid].scoringPerVolume.energyDeposit[id] / copcore::units::MeV),
+        G4FastHit(G4ThreeVector(id, 0, 0), fAdept.fUserData.fScoringPerVolume.energyDeposit[id] / copcore::units::MeV),
         aFastTrack);
   }
 
@@ -149,7 +150,16 @@ void Par04EMShowerModel::Print() const
 
 void Par04EMShowerModel::Initialize()
 {
-  // This is supposed to set the max batching for Adept to allocate properly the memory
-  AdeptIntegration::Instance().SetMaxBatch(25);
-  AdeptIntegration::Instance().Initialize();
+  G4RunManager::RMType rmType = G4RunManager::GetRunManager()->GetRunManagerType();
+  bool sequential             = (rmType == G4RunManager::sequentialRM);
+  fAdept.SetMaxBatch(25);
+
+  auto tid = G4Threading::G4GetThreadId();
+  if (tid < 0) {
+    // This is supposed to set the max batching for Adept to allocate properly the memory
+    fAdept.Initialize(true /*common_data*/);
+    if (sequential) fAdept.Initialize();
+  } else {
+    fAdept.Initialize();
+  }
 }

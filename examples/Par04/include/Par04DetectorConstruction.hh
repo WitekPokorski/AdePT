@@ -41,6 +41,7 @@ class G4Material;
 class G4UniformMagField;
 class G4FieldManager;
 class Par04PrimaryGeneratorAction;
+class Par04EMShowerModel;
 
 class Par04DetectorMessenger;
 const G4int kMaxAbsor = 10; // 0 + 9
@@ -132,6 +133,9 @@ private:
   // field related members
   G4ThreeVector fMagFieldVector;
   Par04PrimaryGeneratorAction *fPrimaryGenerator;
+
+  // Pointer to parameterized shower model (owned)
+  Par04EMShowerModel *fShowerModel{nullptr};
 };
 
 #endif /* PAR03DETECTORCONSTRUCTION_H */

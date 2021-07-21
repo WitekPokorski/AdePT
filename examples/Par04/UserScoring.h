@@ -57,32 +57,65 @@ struct ScoringPerVolume {
   double *chargedTrackLength;
 };
 
-struct UserData {
-  double *energyDeposit_dev{nullptr};
-  double *chargedTrackLength_dev{nullptr};
+struct UserMCIndex {
+  int fMCIndex[NumVolumes];
+  int *fMCIndex_dev{nullptr};
 
-  int MCIndex[NumVolumes];
-  int *MCIndex_dev{nullptr};
-  double chargedTrackLength[NumVolumes];
-  double energyDeposit[NumVolumes];
-  ScoringPerVolume scoringPerVolume;
-  ScoringPerVolume *scoringPerVolume_dev{nullptr};
-  GlobalScoring globalScoring;
-  GlobalScoring *globalScoring_dev{nullptr};
+  static UserMCIndex &GetInstance()
+  {
+    static UserMCIndex userMCIndex;
+    return userMCIndex;
+  }
 
-  UserData()
+  UserMCIndex()
   {
     // Map VecGeom volume IDs to Geant4 material-cuts couples.
     // Fill world and calorimeter.
-    MCIndex[0] = MCIndex[1] = WorldMC;
+    fMCIndex[0] = fMCIndex[1] = WorldMC;
     for (int i = 2; i < NumVolumes; i += (1 + NbOfAbsorbers)) {
-      MCIndex[i]     = WorldMC;
-      MCIndex[i + 1] = GapMC;
-      MCIndex[i + 2] = AbsorberMC;
+      fMCIndex[i]     = WorldMC;
+      fMCIndex[i + 1] = GapMC;
+      fMCIndex[i + 2] = AbsorberMC;
     }
-    scoringPerVolume.chargedTrackLength = chargedTrackLength;
-    scoringPerVolume.energyDeposit      = energyDeposit;
   }
+
+  ~UserMCIndex() { FreeGPU(); }
+
+  void InitializeOnGPU();
+  void FreeGPU();
+};
+
+struct Track;
+namespace adept {
+class MParray;
+}
+
+struct UserData {
+  double *fEnergyDeposit_dev{nullptr};
+  double *fChargedTrackLength_dev{nullptr};
+
+  double fChargedTrackLength[NumVolumes];
+  double fEnergyDeposit[NumVolumes];
+  ScoringPerVolume fScoringPerVolume;
+  ScoringPerVolume *fScoringPerVolume_dev{nullptr};
+  GlobalScoring fGlobalScoring;
+  GlobalScoring *fGlobalScoring_dev{nullptr};
+
+  UserData()
+  {
+    fScoringPerVolume.chargedTrackLength = fChargedTrackLength;
+    fScoringPerVolume.energyDeposit      = fEnergyDeposit;
+  }
+
+  void InitializeOnGPU();
+  void CopyHitsToHost();
+  void FreeGPU();
+
+  // We have to define here also the scoring kernel.
+#ifdef COPCORE_CUDA_COMPILER
+  void DepositEnergy(Track *allTracks, const adept::MParray *queue, int numBlocks, int numThreads,
+                     cudaStream_t &stream);
+#endif
 };
 
 #endif

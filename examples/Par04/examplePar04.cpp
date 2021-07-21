@@ -78,7 +78,7 @@ int main(int argc, char **argv)
 
   // Initialization of default Run manager
   auto *runManager = G4RunManagerFactory::CreateRunManager(G4RunManagerType::Default);
-  //  G4RunManagerFactory::CreateRunManager(G4RunManagerType::Serial);
+  // auto *runManager = G4RunManagerFactory::CreateRunManager(G4RunManagerType::Serial);
 
   // Detector geometry:
   auto detector = new Par04DetectorConstruction();
@@ -106,6 +106,7 @@ int main(int argc, char **argv)
   //----------------
   // Visualization:
   //----------------
+  /*
   G4cout << "Instantiating Visualization Manager......." << G4endl;
   G4VisManager *visManager = new G4VisExecutive;
   visManager->Initialize();
@@ -120,12 +121,16 @@ int main(int argc, char **argv)
     G4String command = "/control/execute ";
     UImanager->ApplyCommand(command + batchMacroName);
   }
+  */
+  G4UImanager *UImanager = G4UImanager::GetUIpointer();
+  G4String command       = "/control/execute ";
+  UImanager->ApplyCommand(command + batchMacroName);
 
   // Free the store: user actions, physics_list and detector_description are
   //                 owned and deleted by the run manager, so they should not
   //                 be deleted in the main() program !
 
-  delete visManager;
+  // delete visManager;
   delete runManager;
 
   return 0;
